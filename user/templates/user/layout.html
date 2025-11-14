@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}明鉴系统{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+  </head>
+  <body class="min-h-screen bg-main text-primary">
+    <div class="flex min-h-screen flex-col">
+      <header class="shadow-sm bg-white/80 backdrop-blur">
+        <div class="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+          <div>
+            <p class="text-sm font-semibold text-primary uppercase tracking-widest">Audit Agent</p>
+            <h1 class="text-2xl font-bold text-primary">明鉴系统 · 审计智能体</h1>
+          </div>
+          <div class="flex items-center gap-4">
+            {% if request.user.is_authenticated %}
+            <a
+              href="{% url 'user:forgot-password' %}"
+              class="text-sm font-medium text-secondary hover:text-primary"
+              >找回密码</a
+            >
+            <a href="{% url 'user:logout' %}" class="btn-secondary">退出</a>
+            {% else %}
+            <span class="text-sm text-secondary">欢迎访问明鉴系统</span>
+            {% endif %}
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-6 py-12">
+        <div class="w-full">{% block content %}{% endblock %}</div>
+      </main>
+    </div>
+
+    {% if messages %}
+    <div class="fixed bottom-6 right-6 space-y-2">
+      {% for message in messages %}
+      <div class="alert">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </body>
+</html>

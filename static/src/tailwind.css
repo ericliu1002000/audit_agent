@@ -2,6 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
-  Add custom styles or @layer directives here.
-*/
+:root {
+  --color-primary: #007bff;
+  --color-primary-darker: #0a58ca;
+  --color-bg-main: #f4f6fb;
+  --color-bg-secondary: #ffffff;
+  --color-text-primary: #1b1f2b;
+  --color-text-secondary: #6c757d;
+  --color-border: #dfe3eb;
+  --color-success: #198754;
+  --color-danger: #dc3545;
+  --color-warning: #ffc107;
+  --color-info: #0dcaf0;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg-main);
+    color: var(--color-text-primary);
+    font-family: 'Inter', 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont,
+      'Segoe UI', sans-serif;
+  }
+}
+
+@layer components {
+  .bg-main {
+    background-color: var(--color-bg-main);
+  }
+
+  .bg-surface {
+    background-color: var(--color-bg-secondary);
+  }
+
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+
+  .btn-primary {
+    @apply rounded-full px-6 py-3 text-center text-sm font-semibold shadow-lg transition;
+    background: linear-gradient(120deg, var(--color-primary), var(--color-primary-darker));
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    filter: brightness(1.05);
+  }
+
+  .btn-secondary {
+    @apply rounded-full border px-5 py-2 text-sm font-semibold transition;
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  .card {
+    @apply rounded-2xl border bg-white/80 p-5 shadow-sm backdrop-blur;
+    border-color: var(--color-border);
+  }
+
+  .input-control {
+    @apply w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2;
+    border-color: var(--color-border);
+    background-color: rgba(255, 255, 255, 0.85);
+  }
+
+  .input-control:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+  }
+
+  .alert {
+    @apply rounded-2xl px-4 py-3 text-sm shadow;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+  }
+
+  .alert-danger {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+  }
+}

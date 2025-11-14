@@ -1,0 +1,33 @@
+{% extends 'user/layout.html' %}
+
+{% block title %}明鉴系统 · 登录{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-md rounded-3xl bg-surface p-10 shadow-xl">
+  <div class="space-y-2 text-center">
+    <p class="text-sm font-semibold tracking-[0.3em] text-secondary uppercase">欢迎登陆</p>
+    <h2 class="text-3xl font-bold text-primary">明鉴系统</h2>
+    <p class="text-secondary">输入账号密码，进入审计智能体工作台。</p>
+  </div>
+  <form method="post" class="mt-8 space-y-6">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+      {% for error in form.non_field_errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% for field in form %}
+    <div class="space-y-2">
+      <label for="{{ field.id_for_label }}" class="text-sm font-medium text-primary">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}
+      <p class="text-sm text-danger">{{ field.errors|join:' ' }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn-primary w-full">立即登录</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,6 +1,49 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
 
 from .models import FundUsage, Indicator
+from .service import export_indicators_excel, full_sync_from_excel
+from regions.models import Province
+
+
+class ActiveStatusFilter(admin.SimpleListFilter):
+    title = "是否启用"
+    parameter_name = "is_active"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("1", "是"),
+            ("0", "否"),
+        )
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "0":
+            return queryset.filter(is_active=False)
+        if value == "all":
+            return queryset
+        return queryset.filter(is_active=True)
+
+    def choices(self, changelist):
+        value = self.value()
+        for lookup, title in self.lookup_choices:
+            yield {
+                "selected": value == lookup or (value is None and lookup == "1"),
+                "query_string": changelist.get_query_string(
+                    {self.parameter_name: lookup}
+                ),
+                "display": title,
+            }
+        yield {
+            "selected": value == "all",
+            "query_string": changelist.get_query_string(
+                {self.parameter_name: "all"}
+            ),
+            "display": "全部",
+        }
 
 
 class IndicatorInline(admin.TabularInline):
@@ -9,6 +52,7 @@ class IndicatorInline(admin.TabularInline):
     model = Indicator
     extra = 0
     fields = (
+        "business_code",
         "level_1",
         "level_2",
         "level_3",
@@ -27,6 +71,7 @@ class FundUsageAdmin(admin.ModelAdmin):
 
     list_display = ("name", "source_file", "indicator_count")
     search_fields = ("name", "source_file")
+    list_per_page = 30
     inlines = (IndicatorInline,)
 
     @admin.display(description="指标数量")
@@ -36,20 +81,32 @@ class FundUsageAdmin(admin.ModelAdmin):
 
 @admin.register(Indicator)
 class IndicatorAdmin(admin.ModelAdmin):
-    """指标管理，支持按资金使用类别筛选。"""
+    """指标管理，支持自定义导入/导出和软删除。"""
 
+    change_list_template = "admin/indicators/indicator/change_list.html"
     list_display = (
-        "level_3",
+        "business_code",
         "fund_usage",
         "level_1",
         "level_2",
+        "level_3",
         "province_id",
         "nature",
         "unit",
+        "explanation",
         "is_vectorized",
+        "is_active",
+        "source_tag",
     )
-    list_filter = ("fund_usage", "province_id", "is_vectorized")
+    list_filter = (
+        "is_vectorized",
+        ActiveStatusFilter,
+        "source_tag",
+        "province_id",
+        "fund_usage",
+    )
     search_fields = (
+        "business_code",
         "level_1",
         "level_2",
         "level_3",
@@ -59,3 +116,89 @@ class IndicatorAdmin(admin.ModelAdmin):
     )
     list_select_related = ("fund_usage", "province_id")
     readonly_fields = ("is_vectorized",)
+    list_per_page = 30
+
+    def get_queryset(self, request):
+        qs = self.model.all_objects.all()
+        qs = qs.order_by("fund_usage__name", "level_1", "level_2", "level_3")
+        qs = qs.select_related(*self.list_select_related)
+        ordering = self.get_ordering(request)
+        if ordering:
+            qs = qs.order_by(*ordering)
+        return qs
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "export/",
+                self.admin_site.admin_view(self.export_view),
+                name="indicators_indicator_export",
+            ),
+            path(
+                "import/",
+                self.admin_site.admin_view(self.import_view),
+                name="indicators_indicator_import",
+            ),
+        ]
+        return custom_urls + urls
+
+    def export_view(self, request):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+
+        changelist = self.get_changelist_instance(request)
+        queryset = changelist.get_queryset(request)
+
+        province_name = "全部省份"
+        province_id = request.GET.get("province_id__id__exact")
+        if province_id:
+            province = Province.objects.filter(id=province_id).first()
+            if province:
+                province_name = province.name
+        return export_indicators_excel(queryset, province_name)
+
+    def import_view(self, request):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        changelist_url = reverse("admin:indicators_indicator_changelist")
+        if request.method == "POST":
+            excel_file = request.FILES.get("excel_file")
+            source_tag = request.POST.get("source_tag", "").strip()
+
+            if not excel_file:
+                messages.error(request, "请提供 Excel 文件")
+                return redirect(changelist_url)
+
+            try:
+                result = full_sync_from_excel(excel_file, source_tag or "")
+            except ValidationError as exc:
+                messages.error(request, f"导入失败：{'；'.join(exc.messages)}")
+                return redirect(changelist_url)
+            except Exception as exc:  # pragma: no cover - unexpected path
+                messages.error(request, f"导入失败：{exc}")
+                return redirect(changelist_url)
+
+            messages.success(
+                request,
+                f"导入完成：创建 {result['created']} 条，更新 {result['updated']} 条，软删除 {result['soft_deleted']} 条",
+            )
+            return redirect(changelist_url)
+
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "title": "导入指标",
+        }
+        return TemplateResponse(
+            request, "admin/indicators/indicator/import.html", context
+        )
+
+    def changelist_view(self, request, extra_context=None):
+        export_url = reverse("admin:indicators_indicator_export")
+        if request.GET:
+            export_url = f"{export_url}?{request.GET.urlencode()}"
+        extra_context = extra_context or {}
+        extra_context["export_url_with_filters"] = export_url
+        return super().changelist_view(request, extra_context=extra_context)

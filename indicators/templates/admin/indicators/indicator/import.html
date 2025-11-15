@@ -1,0 +1,54 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <style>
+    @keyframes import-pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+    .import-status {
+      display: none;
+      margin-left: 16px;
+      font-weight: bold;
+      color: #555;
+      animation: import-pulse 1.2s ease-in-out infinite;
+    }
+  </style>
+  <div class="app-indicator-import">
+    <p>上传符合模板的 .xlsx 文件并可选填写来源标签，以便进行全量同步。</p>
+    <form method="post" enctype="multipart/form-data" id="indicator-import-form">
+      {% csrf_token %}
+      <div class="form-row">
+        <label for="id_excel_file">Excel 文件 (.xlsx)</label>
+        <input type="file" id="id_excel_file" name="excel_file" accept=".xlsx" required>
+      </div>
+      <div class="form-row">
+        <label for="id_source_tag">来源标签（可选）</label>
+        <input type="text" id="id_source_tag" name="source_tag" placeholder="例如：tianjin_2025_v1">
+      </div>
+      <div class="submit-row">
+        <input type="submit" class="default" value="开始导入" id="import-submit">
+        <span class="import-status" id="import-status">正在导入，请稍候...</span>
+      </div>
+    </form>
+  </div>
+  <script>
+    (function () {
+      const form = document.getElementById("indicator-import-form");
+      const submitBtn = document.getElementById("import-submit");
+      const statusEl = document.getElementById("import-status");
+      if (!form || !submitBtn || !statusEl) {
+        return;
+      }
+      form.addEventListener("submit", function () {
+        if (submitBtn.disabled) {
+          return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.value = "正在导入...";
+        statusEl.style.display = "inline-block";
+      });
+    })();
+  </script>
+{% endblock %}

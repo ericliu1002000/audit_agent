@@ -1,6 +1,13 @@
 from django.db import models
 
 
+class IndicatorManager(models.Manager):
+    """默认只返回启用的指标."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_active=True)
+
+
 class FundUsage(models.Model):
     """表示从外部数据导入的资金使用类型。"""
 
@@ -29,6 +36,13 @@ class FundUsage(models.Model):
 class Indicator(models.Model):
     """指标主表，描述三级指标的层级与元数据。"""
 
+    business_code = models.CharField(
+        "编码",
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="业务编码或唯一标识，可为空。",
+    )
     # 对应的资金使用类别
     fund_usage = models.ForeignKey(
         FundUsage,
@@ -90,6 +104,25 @@ class Indicator(models.Model):
         default=False,
         help_text="是否已向量化（由脚本维护，后台仅展示）。",
     )
+    is_active = models.BooleanField(
+        "是否启用",
+        default=True,
+        db_index=True,
+        help_text="软删除标记，False 代表在最新同步中未启用。",
+    )
+    source_tag = models.CharField(
+        "数据来源/批次",
+        max_length=255,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="用于记录导入来源或批次的标签。",
+    )
+
+    # 默认只展示启用的数据
+    objects = IndicatorManager()
+    # 获取所有数据（包含软删除的）
+    all_objects = models.Manager()
 
     def __str__(self) -> str:  # pragma: no cover - simple debug helper
         return self.level_3

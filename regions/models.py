@@ -22,7 +22,7 @@ class Province(models.Model):
         verbose_name_plural = "省份"
 
     def __str__(self) -> str:
-        return self.name
+        return f"{self.id}-{self.name}-{self.code}"
 
 
 class City(models.Model):

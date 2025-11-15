@@ -21,6 +21,9 @@ class FundUsage(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - simple debug helper
         return self.name
+    class Meta:
+        verbose_name = "资金用途/项目"
+        verbose_name_plural = "资金用途/项目"
 
 
 class Indicator(models.Model):
@@ -72,11 +75,14 @@ class Indicator(models.Model):
         help_text="指标计量单位，如“%”“个”“万元”。",
     )
     # 指标来源（如“中央”“广东”）
-    province = models.CharField(
-        "指标省份",
-        max_length=10,
+    province_id = models.ForeignKey(
+        "regions.Province",
+        verbose_name="指标省份",
         help_text="数据来源或发布主体，例如“天津市”“广东省”。",
-        default=''
+        related_name="indicators",
+        db_column="province_id",
+        on_delete=models.PROTECT,
+        default=2,
     )
     # 是否已向量化，用于后续检索同步
     is_vectorized = models.BooleanField(
@@ -87,3 +93,7 @@ class Indicator(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - simple debug helper
         return self.level_3
+
+    class Meta:
+        verbose_name = "指标库"
+        verbose_name_plural = "指标库"

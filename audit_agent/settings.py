@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -87,6 +90,15 @@ DATABASES = {
     }
 }
 
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+REDIS_DB = os.getenv("REDIS_DB", "0")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -148,3 +160,6 @@ CREATE DATABASE IF NOT EXISTS `audit_agent`
 SHELL_PLUS = "ipython"
 SHELL_PLUS_IMPORTS = []
 SHELL_PLUS_PRINT_SQL = False
+_redis_auth = f":{REDIS_PASSWORD}@" if REDIS_PASSWORD else ""
+CELERY_BROKER_URL = f"redis://{_redis_auth}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL

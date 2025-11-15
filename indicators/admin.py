@@ -12,7 +12,7 @@ class IndicatorInline(admin.TabularInline):
         "level_1",
         "level_2",
         "level_3",
-        "source",
+        "province",
         "nature",
         "unit",
         "is_vectorized",
@@ -43,18 +43,18 @@ class IndicatorAdmin(admin.ModelAdmin):
         "fund_usage",
         "level_1",
         "level_2",
-        "source",
+        "province",
         "nature",
         "unit",
         "is_vectorized",
     )
-    list_filter = ("fund_usage", "source", "is_vectorized")
+    list_filter = ("fund_usage", "province", "is_vectorized")
     search_fields = (
         "level_1",
         "level_2",
         "level_3",
         "explanation",
-        "source",
+        "province",
     )
     list_select_related = ("fund_usage",)
     readonly_fields = ("is_vectorized",)

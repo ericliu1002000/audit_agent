@@ -76,6 +76,7 @@ class Indicator(models.Model):
         "指标省份",
         max_length=10,
         help_text="数据来源或发布主体，例如“天津市”“广东省”。",
+        default=''
     )
     # 是否已向量化，用于后续检索同步
     is_vectorized = models.BooleanField(

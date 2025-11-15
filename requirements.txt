@@ -1,2 +1,7 @@
 django==5.2.8
 PyMySQL==1.1.2
+
+
+django-extensions
+ipython
+python-dotenv==1.1.1

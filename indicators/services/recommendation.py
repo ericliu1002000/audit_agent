@@ -66,10 +66,14 @@ def get_fund_usage_recommendations(user_query: str, province_id: int | None = No
         fund_usage = fund_usage_map.get(fund_usage_id)
         if not fund_usage:
             continue
-        indicators_qs = Indicator.objects.filter(
-            id__in=fund_usage_indicators.get(fund_usage_id, [])
-        ).select_related("fund_usage", "province_id")
-        indicators_qs = indicators_qs.order_by("level_1", "level_2", "level_3")
+        indicator_filters = {"fund_usage_id": fund_usage_id, "is_active": True}
+        if province_id:
+            indicator_filters["province_id_id"] = province_id
+        indicators_qs = (
+            Indicator.all_objects.filter(**indicator_filters)
+            .select_related("fund_usage", "province_id")
+            .order_by("level_1", "level_2", "level_3")
+        )
         indicator_items = [
             {
                 "id": indicator.id,

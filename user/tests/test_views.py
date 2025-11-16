@@ -17,7 +17,7 @@ class AuthFlowTests(TestCase):
             'username': self.user.username,
             'password': self.password,
         })
-        self.assertRedirects(response, reverse('user:index'))
+        self.assertRedirects(response, reverse('home'))
 
     def test_login_invalid_credentials(self):
         response = self.client.post(reverse('user:login'), {
@@ -41,7 +41,7 @@ class AuthFlowTests(TestCase):
         })
         self.assertRedirects(response, reverse('user:login'))
         # Should be logged out now
-        response = self.client.get(reverse('user:index'))
+        response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 302)
         # Ensure new password works
         self.assertTrue(self.client.login(username=self.user.username, password=new_password))
@@ -56,6 +56,6 @@ class AuthFlowTests(TestCase):
         })
         self.assertRedirects(response, reverse('user:login'))
         # After reset, should be forced to login again
-        response = self.client.get(reverse('user:index'))
+        response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 302)
         self.assertTrue(self.client.login(username=self.user.username, password=new_password))

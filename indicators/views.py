@@ -1,7 +1,21 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.generic import TemplateView
 
 from indicators.services import get_fund_usage_recommendations
+
+
+class FundUsageRecommendationPage(LoginRequiredMixin, TemplateView):
+    """展示资金用途智能推荐页面."""
+
+    template_name = "indicators/fund_usage_recommendation.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        province_param = (self.request.GET.get("province") or "").strip()
+        context["default_province_id"] = province_param if province_param.isdigit() else ""
+        return context
 
 
 @require_http_methods(["GET"])

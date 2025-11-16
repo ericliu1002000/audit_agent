@@ -16,16 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import RedirectView
+
+from indicators.views import FundUsageRecommendationPage
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("", FundUsageRecommendationPage.as_view(), name="home"),
     path("", include("user.urls")),
     path("regions/", include("regions.urls")),
     path("indicators/", include("indicators.urls")),
-    path(
-        "",
-        RedirectView.as_view(pattern_name="user:login", permanent=False),
-        name="root",
-    ),
 ]

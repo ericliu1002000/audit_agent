@@ -112,6 +112,45 @@ class MilvusIndicatorManager:
         )
         return result[0] if result else None
 
+    def search_similar_indicators(
+        self,
+        query_vector,
+        *,
+        top_k: int,
+        province_id: int | None = None,
+    ):
+        """在 Milvus 中按向量检索指标."""
+
+        collection = self.get_collection()
+        try:
+            collection.load()
+        except Exception:  # pragma: no cover
+            pass
+
+        search_params = {
+            "metric_type": "IP",
+            "params": {"nprobe": 32},
+        }
+        expr_parts = ["is_active == true"]
+        if province_id is not None:
+            expr_parts.append(f"province_id == {int(province_id)}")
+        expr = " and ".join(expr_parts)
+
+        results = collection.search(
+            data=[list(query_vector)],
+            anns_field="embedding",
+            param=search_params,
+            limit=top_k,
+            expr=expr,
+            output_fields=["indicator_id"],
+        )
+
+        hits = results[0] if results else []
+        return [
+            {"indicator_id": hit.entity.get("indicator_id"), "score": float(hit.score)}
+            for hit in hits
+        ]
+
     def upsert_indicator(
         self,
         *,

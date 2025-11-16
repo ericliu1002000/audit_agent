@@ -235,6 +235,8 @@ def full_sync_from_excel(uploaded_file, source_tag: str | None = None) -> Dict[s
             Indicator.objects.bulk_create(new_indicators)
             results["created"] = len(new_indicators)
 
+
+
         update_objects: List[Indicator] = []
         for key in keys_to_update:
             indicator = existing_map[key]
@@ -261,8 +263,8 @@ def full_sync_from_excel(uploaded_file, source_tag: str | None = None) -> Dict[s
                 should_update = True
             if (indicator.explanation or "") != (data["explanation"] or ""):
                 should_update = True
-            if (indicator.source_tag or "") != normalized_source_tag:
-                should_update = True
+            # if (indicator.source_tag or "") != normalized_source_tag:
+            #     should_update = True
             if not indicator.is_active:
                 should_update = True
 
@@ -282,6 +284,7 @@ def full_sync_from_excel(uploaded_file, source_tag: str | None = None) -> Dict[s
             indicator.is_active = True
             indicator.is_vectorized = False
             update_objects.append(indicator)
+
 
         if update_objects:
             Indicator.all_objects.bulk_update(

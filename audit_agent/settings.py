@@ -94,10 +94,23 @@ REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
 REDIS_DB = os.getenv("REDIS_DB", "0")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
-
+_redis_auth = f":{REDIS_PASSWORD}@" if REDIS_PASSWORD else ""
+CELERY_BROKER_URL = f"redis://{_redis_auth}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+
+MILVUS_HOST = os.getenv("MILVUS_HOST", "127.0.0.1")
+MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+MILVUS_USER = os.getenv("MILVUS_USER", "root")
+MILVUS_PASSWORD = os.getenv("MILVUS_PASSWORD", "")
+MILVUS_DB_NAME = os.getenv("MILVUS_DB_NAME", "default")
+MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "indicator_vectors")
+MILVUS_EMBED_DIM = int(os.getenv("MILVUS_EMBED_DIM", "1024"))
+
+EMBED_URL = os.getenv("EMBED_URL", "")
+EMBED_TOKEN = os.getenv("EMBED_TOKEN", "")
 
 
 # Password validation

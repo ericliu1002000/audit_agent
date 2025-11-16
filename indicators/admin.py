@@ -5,7 +5,8 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 
 from .models import FundUsage, Indicator
-from .service import export_indicators_excel, full_sync_from_excel
+from .services import export_indicators_excel, full_sync_from_excel
+from .tasks import sync_all_unvectorized
 from regions.models import Province
 
 
@@ -184,6 +185,9 @@ class IndicatorAdmin(admin.ModelAdmin):
                 request,
                 f"导入完成：创建 {result['created']} 条，更新 {result['updated']} 条，软删除 {result['soft_deleted']} 条",
             )
+            if result["created"] or result["updated"] or result["soft_deleted"]:
+                sync_all_unvectorized.delay()
+                messages.info(request, "已派发向量化同步任务，稍后自动更新向量状态。")
             return redirect(changelist_url)
 
         context = {

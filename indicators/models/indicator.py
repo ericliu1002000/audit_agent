@@ -1,36 +1,7 @@
 from django.db import models
 
-
-class IndicatorManager(models.Manager):
-    """默认只返回启用的指标."""
-
-    def get_queryset(self):
-        return super().get_queryset().filter(is_active=True)
-
-
-class FundUsage(models.Model):
-    """表示从外部数据导入的资金使用类型。"""
-
-    # 资金使用类别名称（如“信息系统建设运维类”）
-    name = models.CharField(
-        "资金使用类别名称",
-        max_length=255,
-        help_text="资金使用类别名称，例如“信息系统建设运维类”。",
-    )
-    # 可选：记录来源 CSV 文件名或标识
-    source_file = models.CharField(
-        "来源文件",
-        max_length=255,
-        blank=True,
-        null=True,
-        help_text="可选：标记该类别来自哪一个 CSV 或外部文件。",
-    )
-
-    def __str__(self) -> str:  # pragma: no cover - simple debug helper
-        return self.name
-    class Meta:
-        verbose_name = "资金用途/项目"
-        verbose_name_plural = "资金用途/项目"
+from indicators.managers import IndicatorManager
+from indicators.models.fund_usage import FundUsage
 
 
 class Indicator(models.Model):
@@ -127,6 +98,17 @@ class Indicator(models.Model):
     def __str__(self) -> str:  # pragma: no cover - simple debug helper
         return self.level_3
 
+    def combo_text(self) -> str:
+        """构建向量化使用的组合文本."""
+
+        parts = [
+            self.fund_usage.name if self.fund_usage_id else "",
+            self.level_3 or "",
+            self.explanation or "",
+        ]
+        return "-".join(filter(None, parts))
+
     class Meta:
         verbose_name = "指标库"
         verbose_name_plural = "指标库"
+

@@ -15,6 +15,11 @@
 - 创建管理员账号：`python manage.py createsuperuser`
 - 快速检查配置：`python manage.py check`
 
+## 后台任务（Celery）
+
+- 启动 Worker：`celery -A audit_agent worker -l info`
+- 启动 Beat（若项目需要定时任务）：`celery -A audit_agent beat -l info`
+
 ## 前端样式（Tailwind CSS）
 
 - 开发模式实时监听：`npm run tailwind:watch`

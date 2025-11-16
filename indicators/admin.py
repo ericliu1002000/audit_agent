@@ -79,6 +79,29 @@ class FundUsageAdmin(admin.ModelAdmin):
     def indicator_count(self, obj):
         return obj.indicators.count()
 
+    def save_formset(self, request, form, formset, change):
+        """在内联中保存指标时，重置向量化状态并触发同步任务。"""
+
+        instances = formset.save(commit=False)
+        needs_vector_sync = False
+
+        for obj in instances:
+            if isinstance(obj, Indicator):
+                obj.is_vectorized = False
+                obj.is_active = True
+                needs_vector_sync = True
+            obj.save()
+
+        formset.save_m2m()
+
+        for obj in formset.deleted_objects:
+            if isinstance(obj, Indicator) and obj.pk:
+                Indicator.all_objects.filter(pk=obj.pk).update(is_active=False)
+                needs_vector_sync = True
+
+        if needs_vector_sync:
+            sync_all_unvectorized.delay()
+
 
 @admin.register(Indicator)
 class IndicatorAdmin(admin.ModelAdmin):
@@ -206,3 +229,26 @@ class IndicatorAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context["export_url_with_filters"] = export_url
         return super().changelist_view(request, extra_context=extra_context)
+
+    def save_model(self, request, obj, form, change):
+        """保存指标时，重置向量化标记并触发同步。"""
+
+        obj.is_vectorized = False
+        obj.is_active = True
+        super().save_model(request, obj, form, change)
+        sync_all_unvectorized.delay()
+
+    def delete_model(self, request, obj):
+        """删除指标时执行软删除并触发同步。"""
+
+        Indicator.all_objects.filter(pk=obj.pk).update(is_active=False)
+        sync_all_unvectorized.delay()
+
+    def delete_queryset(self, request, queryset):
+        """批量删除指标时执行软删除并触发同步。"""
+
+        updated = Indicator.all_objects.filter(pk__in=queryset.values_list("pk", flat=True)).update(
+            is_active=False
+        )
+        if updated:
+            sync_all_unvectorized.delay()

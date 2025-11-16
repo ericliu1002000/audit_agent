@@ -26,12 +26,14 @@ class Indicator(models.Model):
     level_1 = models.CharField(
         "一级指标",
         max_length=255,
+        blank=True,
         help_text="一级指标分类，例如“产出指标”。",
     )
     # 二级指标分类（如“质量指标”）
     level_2 = models.CharField(
         "二级指标",
         max_length=255,
+        blank=True,
         help_text="二级指标分类，例如“质量指标”。",
     )
     # 三级指标名称，描述具体指标
@@ -51,12 +53,14 @@ class Indicator(models.Model):
     nature = models.CharField(
         "指标性质",
         max_length=255,
+        blank=True,
         help_text="指标的性质或比较符号，例如“≥”“≤”“定性描述”。",
     )
     # 指标计量单位（如“%”“个”“万元”）
     unit = models.CharField(
         "计量单位",
         max_length=20,
+        blank=True,
         help_text="指标计量单位，如“%”“个”“万元”。",
     )
     # 指标来源（如“中央”“广东”）
@@ -111,4 +115,3 @@ class Indicator(models.Model):
     class Meta:
         verbose_name = "指标库"
         verbose_name_plural = "指标库"
-

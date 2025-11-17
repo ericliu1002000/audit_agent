@@ -1141,4 +1141,8 @@ body {
   .lg\:grid-cols-\[1fr_1fr_auto\] {
     grid-template-columns: 1fr 1fr auto;
   }
+
+  .lg\:grid-cols-\[1fr_auto\] {
+    grid-template-columns: 1fr auto;
+  }
 }

@@ -115,38 +115,6 @@
             display: none;
         }
 
-        .select-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        .select-wrapper::after {
-            content: '';
-            position: absolute;
-            pointer-events: none;
-            right: 1.25rem;
-            top: 50%;
-            width: 0.6rem;
-            height: 0.35rem;
-            background-image: linear-gradient(135deg, var(--color-primary), var(--color-primary-darker));
-            clip-path: polygon(50% 100%, 0 0, 100% 0);
-            transform: translateY(-50%);
-            opacity: 0.8;
-        }
-
-        select.input-control {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            padding-right: 3rem;
-            cursor: pointer;
-            background-color: rgba(255, 255, 255, 0.95);
-        }
-
-        select.input-control::-ms-expand {
-            display: none;
-        }
-
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -203,37 +171,28 @@
         }
     </style>
 
-    <section class="space-y-8" data-default-province="{{ default_province_id }}">
+    <section class="space-y-8">
         <div class="query-panel px-6 py-8 sm:px-8 sm:py-10">
             <div class="grid gap-6 md:gap-8 lg:grid-cols-[1.35fr_1fr]">
                 <div class="space-y-4">
                     <p class="text-sm font-semibold uppercase tracking-[0.35em] text-secondary">Fund Usage AI</p>
                     <h2 class="text-4xl font-bold text-primary">资金用途智能推荐系统</h2>
                     <p class="text-base text-secondary leading-relaxed">
-                        结合大模型策略和本地指标体系，一键生成高质量的资金用途建议。选择省份并描述您的业务场景，系统将返回最多10 条、附带匹配得分的洞察。
+                        结合大模型策略和本地指标体系，一键生成高质量的资金用途建议。填写业务场景后，系统默认按照全国范围返回最多10 条、附带匹配得分的洞察。
                     </p>
                 </div>
                 <div class="rounded-2xl border border-dashed border-border/80 bg-white/70 p-5 text-sm text-secondary md:p-6">
                     <p class="font-semibold text-primary">小贴士</p>
                     <ul class="mt-3 space-y-2">
-                        <li>• 建议先选择省份，再填写业务描述，提升命中率。</li>
+                        <li>• 建议详细描述业务场景或目标，实现更精准的匹配。</li>
                         <li>• 点击左侧 [+] 展开查看指标详情，再次点击可收起。</li>
                         <li>• 推荐结果由AI语义检索，通过相关性匹配算法生成推荐结果，请仔细甄别，不代表本网站的意见。</li>
                     </ul>
                 </div>
             </div>
 
-            <form id="recommend-form" class="mt-8 grid gap-5 md:mt-10 md:gap-6 lg:grid-cols-[1fr_1fr_auto]"
+            <form id="recommend-form" class="mt-8 grid gap-5 md:mt-10 md:gap-6 lg:grid-cols-[1fr_auto]"
                   autocomplete="off">
-                <label class="space-y-2 text-sm font-medium text-primary">
-                    <span>选择省份</span>
-                    <div class="select-wrapper">
-                        <select id="province-select" class="input-control" aria-label="选择省份">
-                            <option value="">加载省份中...</option>
-                        </select>
-                    </div>
-                </label>
-
                 <label class="space-y-2 text-sm font-medium text-primary lg:col-span-1">
                     <span>请输入您的业务描述</span>
                     <input
@@ -269,13 +228,9 @@
     <script>
         (function () {
             const endpoints = {
-                provinces: '/regions/api/provinces/',
                 recommendations: '/indicators/api/fund-usage/recommendations/',
             };
 
-            const pageContainer = document.querySelector('[data-default-province]');
-            const defaultProvinceId = pageContainer?.dataset.defaultProvince || '';
-            const provinceSelect = document.getElementById('province-select');
             const queryInput = document.getElementById('query-input');
             const form = document.getElementById('recommend-form');
             const button = document.getElementById('recommend-btn');
@@ -487,14 +442,10 @@
                     queryInput.focus();
                     return;
                 }
-                const provinceId = provinceSelect.value;
                 beginCooldown();
                 setFeedback('正在获取推荐，请稍候...', 'info');
                 accordion.innerHTML = '';
                 const params = new URLSearchParams({query});
-                if (provinceId) {
-                    params.append('province_id', provinceId);
-                }
                 try {
                     const response = await fetch(`${endpoints.recommendations}?${params.toString()}`, {
                         headers: {'Accept': 'application/json'},
@@ -511,34 +462,7 @@
                 }
             };
 
-            const loadProvinces = async () => {
-                try {
-                    const response = await fetch(endpoints.provinces, {headers: {'Accept': 'application/json'}});
-                    const payload = await response.json();
-                    if (!response.ok) {
-                        throw new Error(payload.error || '省份获取失败');
-                    }
-                    provinceSelect.innerHTML = '<option value="">全国（可选）</option>';
-                    (payload.results || []).forEach((province) => {
-                        const option = document.createElement('option');
-                        option.value = province.id;
-                        option.textContent = province.name;
-                        provinceSelect.appendChild(option);
-                    });
-                    if (defaultProvinceId) {
-                        const candidate = provinceSelect.querySelector(`option[value="${defaultProvinceId}"]`);
-                        if (candidate) {
-                            provinceSelect.value = defaultProvinceId;
-                        }
-                    }
-                } catch (error) {
-                    provinceSelect.innerHTML = '<option value="">无法加载省份，请刷新页面重试</option>';
-                    setFeedback('省份列表加载失败，无法发起推荐。', 'error');
-                }
-            };
-
             form.addEventListener('submit', handleSubmit);
-            loadProvinces();
         })();
     </script>
 {% endblock %}

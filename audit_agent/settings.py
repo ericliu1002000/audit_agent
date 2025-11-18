@@ -60,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'audit_agent.middleware.RequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'audit_agent.urls'
@@ -195,6 +196,11 @@ LOGGING = {
             "level": LOG_LEVEL,
             "propagate": False,
         },
+        "django.server": {
+            "handlers": ["console", "file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
         "django.request": {
             "handlers": ["console", "file"],
             "level": "ERROR",
@@ -203,6 +209,11 @@ LOGGING = {
         "audit_agent": {
             "handlers": ["console", "file"],
             "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "audit_agent.request": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
             "propagate": False,
         },
     },

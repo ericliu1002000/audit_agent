@@ -1,5 +1,6 @@
 import logging
 import time
+import uuid
 from urllib.parse import unquote
 
 from django.utils.deprecation import MiddlewareMixin
@@ -14,9 +15,9 @@ class RequestLoggingMiddleware(MiddlewareMixin):
 
     def process_response(self, request, response):
         try:
-            duration_ms = None
+            duration = None
             if hasattr(request, "_start_time"):
-                duration_ms = int((time.time() - request._start_time) * 1000)
+                duration = time.time() - request._start_time
 
             user = getattr(request, "user", None)
             if user and user.is_authenticated:
@@ -32,11 +33,46 @@ class RequestLoggingMiddleware(MiddlewareMixin):
             else:
                 full_path = path
 
-            msg = f"{request.method} {full_path} status={response.status_code} user={user_repr}"
-            if duration_ms is not None:
-                msg += f" duration_ms={duration_ms}"
+            remote_addr = request.META.get("REMOTE_ADDR") or ""
+            real_ip = (
+                request.META.get("HTTP_X_REAL_IP")
+                or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+                or remote_addr
+            )
 
-            logger.info(msg)
+            protocol = request.META.get("SERVER_PROTOCOL", "HTTP/1.1")
+
+            content_length = response.get("Content-Length")
+            if content_length is None:
+                try:
+                    content_length = str(len(response.content))
+                except Exception:
+                    content_length = ""
+
+            if duration is not None:
+                request_time = f"{duration:.3f}"
+            else:
+                request_time = ""
+
+            request_id = (
+                request.META.get("HTTP_X_REQUEST_ID") or str(uuid.uuid4())
+            )
+            response["X-Request-ID"] = request_id
+
+            data = {
+                "remote_addr": remote_addr,
+                "real_ip": real_ip,
+                "request": f"{request.method} {full_path}",
+                "status": str(response.status_code),
+                "body_bytes_sent": content_length,
+                "upstream_response_time": request_time,
+                "http_user_agent": request.META.get("HTTP_USER_AGENT", ""),
+                "request_id": request_id,
+                "user": user_repr,
+                "request_time": request_time,
+            }
+
+            logger.info(data)
         except Exception:
             # 不能影响正常请求流程
             logging.getLogger("audit_agent").exception(

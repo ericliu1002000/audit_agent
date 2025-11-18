@@ -172,22 +172,21 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "verbose": {
-            "format": "[{levelname}] {asctime} {name}:{lineno} - {message}",
-            "style": "{",
+        "json": {
+            "()": "audit_agent.logging_utils.JsonFormatter",
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOG_DIR / "audit_agent.log",
             "maxBytes": 5 * 1024 * 1024,
             "backupCount": 5,
-            "formatter": "verbose",
+            "formatter": "json",
         },
     },
     "loggers": {

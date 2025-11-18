@@ -700,14 +700,6 @@ body {
   position: fixed;
 }
 
-.absolute {
-  position: absolute;
-}
-
-.relative {
-  position: relative;
-}
-
 .bottom-6 {
   bottom: 1.5rem;
 }
@@ -1136,10 +1128,6 @@ body {
 
   .lg\:grid-cols-\[1\.35fr_1fr\] {
     grid-template-columns: 1.35fr 1fr;
-  }
-
-  .lg\:grid-cols-\[1fr_1fr_auto\] {
-    grid-template-columns: 1fr 1fr auto;
   }
 
   .lg\:grid-cols-\[1fr_auto\] {

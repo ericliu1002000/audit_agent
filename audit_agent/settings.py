@@ -195,6 +195,11 @@ LOGGING = {
             "level": LOG_LEVEL,
             "propagate": False,
         },
+        "django.request": {
+            "handlers": ["console", "file"],
+            "level": "ERROR",
+            "propagate": False,
+        },
         "audit_agent": {
             "handlers": ["console", "file"],
             "level": LOG_LEVEL,

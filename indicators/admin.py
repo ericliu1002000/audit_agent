@@ -70,8 +70,9 @@ class IndicatorInline(admin.TabularInline):
 class FundUsageAdmin(admin.ModelAdmin):
     """资金使用类别管理，同时展示其下的指标。"""
 
-    list_display = ("name", "source_file", "indicator_count")
-    search_fields = ("name", "source_file")
+    list_display = ("name", "province", "source_file", "indicator_count")
+    search_fields = ("name", "source_file", "province__name", "province__code")
+    list_filter = ("province",)
     list_per_page = 30
     inlines = (IndicatorInline,)
 

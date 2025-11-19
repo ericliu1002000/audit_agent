@@ -176,14 +176,15 @@ def full_sync_from_excel(uploaded_file, source_tag: str | None = None) -> Dict[s
     if missing_provinces:
         raise ValidationError(f"系统中缺少这些省份: {', '.join(sorted(missing_provinces))}")
 
-    fund_usage_cache: Dict[str, FundUsage] = {
-        fu.name: fu for fu in FundUsage.objects.filter(name__in=fund_usage_names)
-    }
-    for fund_usage_name in fund_usage_names:
-        if fund_usage_name not in fund_usage_cache:
-            fund_usage_cache[fund_usage_name], _ = FundUsage.objects.get_or_create(
-                name=fund_usage_name
-            )
+    # 资金用途按照「省份 + 名称」唯一，构建缓存时一起考虑
+    fund_usage_cache: Dict[Tuple[str, str], FundUsage] = {}
+    existing_fund_usages = FundUsage.objects.filter(
+        province__name__in=province_names,
+        name__in=fund_usage_names,
+    ).select_related("province")
+    for fu in existing_fund_usages:
+        if fu.province_id:
+            fund_usage_cache[(fu.province.name, fu.name)] = fu
 
     excel_keys = set(excel_data_map.keys())
     db_keys = set(
@@ -215,10 +216,21 @@ def full_sync_from_excel(uploaded_file, source_tag: str | None = None) -> Dict[s
         new_indicators: List[Indicator] = []
         for key in keys_to_create:
             data = excel_data_map[key]
+            province_name = data["province_name"]
+            fund_usage_name = data["fund_usage_name"]
+            province = province_cache[province_name]
+            fu_cache_key = (province_name, fund_usage_name)
+            fund_usage_obj = fund_usage_cache.get(fu_cache_key)
+            if not fund_usage_obj:
+                fund_usage_obj, _ = FundUsage.objects.get_or_create(
+                    province=province,
+                    name=fund_usage_name,
+                )
+                fund_usage_cache[fu_cache_key] = fund_usage_obj
             new_indicators.append(
                 Indicator(
                     business_code=data["business_code"],
-                    fund_usage=fund_usage_cache[data["fund_usage_name"]],
+                    fund_usage=fund_usage_obj,
                     level_1=data["level_1"],
                     level_2=data["level_2"],
                     level_3=data["level_3"],
@@ -241,8 +253,17 @@ def full_sync_from_excel(uploaded_file, source_tag: str | None = None) -> Dict[s
         for key in keys_to_update:
             indicator = existing_map[key]
             data = excel_data_map[key]
-            new_fund_usage = fund_usage_cache[data["fund_usage_name"]]
-            new_province = province_cache[data["province_name"]]
+            province_name = data["province_name"]
+            fund_usage_name = data["fund_usage_name"]
+            new_province = province_cache[province_name]
+            fu_cache_key = (province_name, fund_usage_name)
+            new_fund_usage = fund_usage_cache.get(fu_cache_key)
+            if not new_fund_usage:
+                new_fund_usage, _ = FundUsage.objects.get_or_create(
+                    province=new_province,
+                    name=fund_usage_name,
+                )
+                fund_usage_cache[fu_cache_key] = new_fund_usage
 
             should_update = False
             if (indicator.business_code or "") != (data["business_code"] or ""):

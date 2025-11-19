@@ -95,6 +95,8 @@ def get_fund_usage_recommendations(user_query: str, province_id: int | None = No
             {
                 "id": fund_usage.id,
                 "name": fund_usage.name,
+                "province_id": fund_usage.province_id,
+                "province_name": fund_usage.province.name if fund_usage.province_id else "",
                 "score": round(score, 4),
                 "indicators": indicator_items,
             }

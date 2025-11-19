@@ -17,6 +17,8 @@ collect_code.py
 venv/
 ENV/
 doc/
+**/doc/
+indicators/doc/
 !regions/doc/
 !regions/doc/readme.md
 !indicators/doc/

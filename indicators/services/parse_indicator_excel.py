@@ -8,6 +8,7 @@ parse_indicator_excel
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import List
 
@@ -15,9 +16,26 @@ from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 
 
+def clean_text(value) -> str:
+    """
+    标准化 Excel 单元格文本：去除首尾及内部空白，以便 LLM 正确识别字段。
+    业务表格常见“绩 效 目 标”这种分散对齐写法，如果不清洗，会被当成多个 token。
+    """
+
+    if value is None:
+        return ""
+    text = str(value).strip()
+    # 使用正则移除字符串内部所有空白字符，避免中文“分散对齐”留下多余空格。
+    return re.sub(r"\s+", "", text)
+
+
 def parse_excel_to_markdown(file_path: str) -> str:
     """
-    将 Excel 文件解析为 Markdown 表格字符串。   这里专门针对指标模型进行优化。并不具备通用性。
+    将 Excel 文件解析为 Markdown 表格字符串（针对指标审核场景做了定制优化）。
+    处理流程包括：
+    1. 计算数据实际占用的最大列数，用于约束 Markdown 行宽；
+    2. 解开合并单元格并填充，避免信息丢失；
+    3. 文本标准化 + 行内去重 + 补齐列数，保证输出表格列数统一、语义紧凑。
 
     参数:
         file_path (str): Excel 文件的绝对路径或相对路径。
@@ -48,6 +66,15 @@ def parse_excel_to_markdown(file_path: str) -> str:
         raise ValueError("请上传xlsx格式的表格文件") from exc
     sheet = workbook.worksheets[0]
 
+    # Step 1: 预先扫描所有行，按照“有效数据列”统计最大列数，避免依赖不准确的 sheet.max_column。
+    max_cols = 0
+    for raw_row in sheet.iter_rows(values_only=True):
+        normalized_row = [clean_text(cell) for cell in raw_row]
+        while normalized_row and normalized_row[-1] == "":
+            normalized_row.pop()
+        if len(normalized_row) > max_cols:
+            max_cols = len(normalized_row)
+
     # 先复制 merged_cells.ranges，再遍历，避免在 unmerge 过程中修改原列表导致的迭代问题。
     for merged_range in list(sheet.merged_cells.ranges):
         min_row, min_col, max_row, max_col = (
@@ -64,35 +91,38 @@ def parse_excel_to_markdown(file_path: str) -> str:
                 sheet.cell(row=row, column=col).value = top_left_value
 
     markdown_lines: List[str] = []
-    for row_index, row in enumerate(sheet.iter_rows(values_only=True)):
-        original_row = ["" if cell is None else str(cell).strip() for cell in row]
+    for row in sheet.iter_rows(values_only=True):
+        original_row = [clean_text(cell) for cell in row]
 
-        if row_index < 10:
-            # 仅对前 10 行做行内去重，避免指标列表等长表格信息被过度清洗。
-            cleaned_row: List[str] = []
-            for col_index, value in enumerate(original_row):
-                if col_index == 0:
-                    cleaned_row.append(value)
-                    continue
-                # 必须以“原始值”做对比，不能一边修改一边比较，否则会出现 A->"" 后再把后面的 A 误认为不相同。
-                prev_original_value = original_row[col_index - 1]
-                if value == prev_original_value:
-                    cleaned_row.append("")
-                else:
-                    cleaned_row.append(value)
-        else:
-            cleaned_row = original_row
+        # 行内去重：必须基于“原始行”的前一个值比较，避免边修改边比较导致 ['A','A','A'] -> ['A','','A'] 的错误。
+        cleaned_row: List[str] = []
+        for col_index, value in enumerate(original_row):
+            if col_index == 0:
+                cleaned_row.append(value)
+                continue
+            prev_original_value = original_row[col_index - 1]
+            cleaned_row.append("" if value == prev_original_value else value)
 
-        if all(cell == "" for cell in cleaned_row):
+        # 先移除尾部空值，确保“实际列数”最精简，再补齐到 max_cols，保证 Markdown 列宽一致。
+        while cleaned_row and cleaned_row[-1] == "":
+            cleaned_row.pop()
+
+        if not cleaned_row:
             continue
+
+        if max_cols == 0:
+            max_cols = len(cleaned_row)
+
+        while len(cleaned_row) < max_cols:
+            cleaned_row.append("")
+
         markdown_lines.append("|" + "|".join(cleaned_row) + "|")
 
     if not markdown_lines:
         return ""
 
     # Markdown 表格需要在首行（表头）后插入分割线，用于区分表头和主体。
-    header_cell_count = markdown_lines[0].count("|") - 1
-    divider = "|" + "|".join(["---"] * header_cell_count) + "|"
+    divider = "|" + "|".join(["---"] * max(max_cols, 1)) + "|"
     markdown_lines.insert(1, divider)
 
     return "\n".join(markdown_lines)

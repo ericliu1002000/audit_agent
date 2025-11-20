@@ -16,13 +16,8 @@ all_code.txt
 collect_code.py
 venv/
 ENV/
-doc/
+docs/
 **/doc/
-indicators/doc/
-!regions/doc/
-!regions/doc/readme.md
-!indicators/doc/
-!indicators/doc/readme.md
 .build/
 dist/
 .eggs/

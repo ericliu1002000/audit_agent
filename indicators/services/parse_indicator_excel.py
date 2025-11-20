@@ -90,7 +90,7 @@ def parse_excel_to_markdown(file_path: str) -> str:
             for col in range(min_col, max_col + 1):
                 sheet.cell(row=row, column=col).value = top_left_value
 
-    markdown_lines: List[str] = []
+    processed_rows: List[List[str]] = []
     for row in sheet.iter_rows(values_only=True):
         original_row = [clean_text(cell) for cell in row]
 
@@ -116,10 +116,22 @@ def parse_excel_to_markdown(file_path: str) -> str:
         while len(cleaned_row) < max_cols:
             cleaned_row.append("")
 
-        markdown_lines.append("|" + "|".join(cleaned_row) + "|")
+        processed_rows.append(cleaned_row)
 
-    if not markdown_lines:
+    if not processed_rows:
         return ""
+
+    final_rows: List[List[str]] = []
+    for cleaned_row in processed_rows:
+        if final_rows and cleaned_row == final_rows[-1]:
+            # Vertical Deduplication: Remove row only if strictly identical to the previous one.
+            continue
+        final_rows.append(cleaned_row)
+
+    if not final_rows:
+        return ""
+
+    markdown_lines = ["|" + "|".join(row) + "|" for row in final_rows]
 
     # Markdown 表格需要在首行（表头）后插入分割线，用于区分表头和主体。
     divider = "|" + "|".join(["---"] * max(max_cols, 1)) + "|"
@@ -131,7 +143,7 @@ def parse_excel_to_markdown(file_path: str) -> str:
 if __name__ == "__main__":
     # 使用项目中提供的示例 Excel 做演示（需确保为 xlsx 格式），可根据需要替换路径。
     # example_path = "indicators/doc/indicator-example.xlsx"
-    example_path = "/Users/liuxiaoqi/SynologyDrive/work/势术/合作/审计智能体/指标相关/实例/天津-无线电管理设施运维.xlsx"
+    example_path = "/Users/liuxiaoqi/SynologyDrive/work/势术/合作/审计智能体/指标相关/实例/天津-高校改革.xlsx"
     try:
         print(parse_excel_to_markdown(example_path))
     except Exception as exc:

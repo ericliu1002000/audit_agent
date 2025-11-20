@@ -1,3 +1,9 @@
+"""Excel import/export services for indicator master data.
+
+该模块聚焦指标主数据的 Excel 导入导出逻辑，包含模板校验、数据组装、业务校验等
+流程，因此与纯解析工具区分开：这里负责 orchestrate 业务操作，而工具类函数则放在
+`indicators/services/utils/` 下。"""
+
 from __future__ import annotations
 
 from io import BytesIO

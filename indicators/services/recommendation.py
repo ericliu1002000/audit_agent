@@ -1,3 +1,8 @@
+"""Vector-search driven recommendation services for indicators.
+
+本模块封装了指标推荐/资金用途推荐的业务服务，负责串联向量化、Milvus 检索、
+数据库补充信息等步骤，因此保持在 services 根目录，与 `utils` 中的工具方法区分。"""
+
 from __future__ import annotations
 
 from collections import defaultdict

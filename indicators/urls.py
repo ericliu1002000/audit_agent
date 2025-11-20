@@ -15,4 +15,14 @@ urlpatterns = [
         views.fund_usage_recommendations,
         name="fund_usage_recommendations",
     ),
+    path(
+        "api/audit/upload/",
+        views.audit_upload,
+        name="audit_upload",
+    ),
+    path(
+        "api/audit/status/<str:task_id>/",
+        views.audit_status,
+        name="audit_status",
+    ),
 ]

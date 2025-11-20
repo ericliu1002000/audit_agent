@@ -16,7 +16,11 @@ DEEPSEEK_MODEL = "deepseek-chat"
 DEEPSEEK_TEMPERATURE = 0.1
 
 
-def invoke_deepseek(messages: Sequence[Dict[str, str]], response_format: Dict[str, str] | None = None) -> Any:
+def invoke_deepseek(
+    messages: Sequence[Dict[str, str]],
+    response_format: Dict[str, str] | None = None,
+    **extra_params: Any,
+) -> Any:
     """Invoke DeepSeek via OpenAI client with shared configuration."""
 
     if not messages:
@@ -36,6 +40,7 @@ def invoke_deepseek(messages: Sequence[Dict[str, str]], response_format: Dict[st
                 temperature=DEEPSEEK_TEMPERATURE,
                 response_format=response_format or {"type": "json_object"},
                 input=messages,
+                **extra_params,
             )
         # 兼容旧版 openai SDK，仅支持 chat.completions 接口。
         return client.chat.completions.create(
@@ -43,6 +48,7 @@ def invoke_deepseek(messages: Sequence[Dict[str, str]], response_format: Dict[st
             temperature=DEEPSEEK_TEMPERATURE,
             response_format=response_format or {"type": "json_object"},
             messages=messages,
+            **extra_params,
         )
     except Exception as exc:  # pragma: no cover - 网络调用异常
         logger.exception("调用 DeepSeek API 失败")

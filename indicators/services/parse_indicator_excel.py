@@ -68,13 +68,20 @@ def parse_excel_to_markdown(file_path: str) -> str:
 
     # Step 1: 预先扫描所有行，按照“有效数据列”统计最大列数，避免依赖不准确的 sheet.max_column。
     max_cols = 0
+    required_keywords = {"一级指标", "二级指标", "三级指标"}
+    found_keywords = set()
     for raw_row in sheet.iter_rows(values_only=True):
         normalized_row = [clean_text(cell) for cell in raw_row]
         while normalized_row and normalized_row[-1] == "":
             normalized_row.pop()
+        for text in normalized_row:
+            if text in required_keywords:
+                found_keywords.add(text)
         if len(normalized_row) > max_cols:
             max_cols = len(normalized_row)
 
+    if required_keywords - found_keywords:
+        raise ValueError("模板格式错误，缺少指标数据（确认文件包含一级指标、二级指标、三级指标）")
     # 先复制 merged_cells.ranges，再遍历，避免在 unmerge 过程中修改原列表导致的迭代问题。
     for merged_range in list(sheet.merged_cells.ranges):
         min_row, min_col, max_row, max_col = (

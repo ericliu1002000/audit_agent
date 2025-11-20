@@ -66,7 +66,7 @@ def fund_usage_recommendations(request):
     )
 
 
-AUDIT_TASK_TTL = 24 * 60 * 60  # 审核任务状态在缓存中保留 24 小时
+AUDIT_TASK_TTL = 60 * 60  # 审核任务状态在缓存中保留 24 小时
 
 
 def _audit_cache_key(task_id: str) -> str:

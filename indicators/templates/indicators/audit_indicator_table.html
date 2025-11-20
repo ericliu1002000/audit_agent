@@ -4,65 +4,85 @@
 
 {% block content %}
 <style>
-  .query-panel {
-    border-radius: 1.5rem;
-    background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(10, 88, 202, 0.05));
-    border: 1px solid var(--color-border);
+  .audit-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .audit-hero {
+    border-radius: 1.75rem;
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(10, 88, 202, 0.12));
+    border: 1px solid rgba(222, 226, 230, 0.6);
     box-shadow: 0 25px 55px rgba(15, 23, 42, 0.08);
   }
 
-  .results-panel {
+  .audit-hero p,
+  .audit-hero h2 {
+    margin: 0;
+  }
+
+  .audit-hero .eyebrow {
+    font-size: 0.85rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+  }
+
+  .audit-hero .hero-actions {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .hero-hints {
+    border-radius: 1rem;
+    padding: 1.25rem;
+    border: 1px dashed rgba(222, 226, 230, 0.7);
+    background: rgba(255, 255, 255, 0.65);
+  }
+
+  .panel {
     border-radius: 1.5rem;
     border: 1px solid var(--color-border);
-    background-color: rgba(248, 249, 250, 0.9);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 15px 40px rgba(15, 23, 42, 0.08);
-  }
-
-  .log-box {
-    border-radius: 0.85rem;
-    border: 1px solid var(--color-border);
     background-color: #fff;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.04);
   }
 
-  .log-box pre {
-    max-height: 220px;
-    overflow: auto;
-    font-family: Menlo, Monaco, Consolas, monospace;
-    font-size: 0.9rem;
+  .upload-dropzone {
+    border: 1.5px dashed rgba(0, 123, 255, 0.4);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    background: rgba(248, 249, 250, 0.8);
+    display: grid;
+    gap: 0.75rem;
   }
 
-  .summary-grid {
-    border-radius: 0.85rem;
-    background-color: #fff;
-    border: 1px solid var(--color-border);
+  .file-input-hidden {
+    display: none;
   }
 
-  .badge-pill {
+  .file-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.4rem;
     border-radius: 999px;
-    padding: 0.3rem 0.8rem;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-darker));
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 15px 35px rgba(10, 88, 202, 0.25);
   }
 
-  .issue-section {
+  .file-name {
+    min-width: 180px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.55rem 0.9rem;
     border-radius: 0.85rem;
     border: 1px solid var(--color-border);
-    background-color: #fff;
-  }
-
-  .issue-item {
-    padding: 0.5rem 0;
-    border-bottom: 1px dashed var(--color-border);
-  }
-
-  .issue-item:last-child {
-    border-bottom: none;
-  }
-
-  .issue-title {
-    font-weight: 600;
-  }
-
-  .issue-meta {
-    font-size: 0.85rem;
+    background: #fff;
+    font-size: 0.9rem;
     color: var(--color-text-secondary);
   }
 
@@ -70,7 +90,25 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    font-weight: 600;
+    padding: 0.85rem 1.2rem;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-darker));
+    color: #fff;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-primary:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 20px 35px rgba(10, 88, 202, 0.25);
   }
 
   .btn-spinner {
@@ -92,236 +130,428 @@
     }
   }
 
-  /* 自定义上传样式 */
-  .file-input-hidden {
-    display: none;
+  .live-panel {
+    background: rgba(248, 249, 250, 0.9);
   }
 
-  .file-picker {
+  .status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.55rem 1.1rem;
-    border-radius: 0.85rem;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-darker));
-    color: #fff;
+    gap: 0.4rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
     font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 10px 25px rgba(10, 88, 202, 0.25);
-    border: 1px solid var(--color-primary-darker);
+    border: 1px solid rgba(222, 226, 230, 0.8);
+    color: var(--color-text-secondary);
   }
 
-  .file-name {
-    min-width: 160px;
-    padding: 0.45rem 0.75rem;
-    border-radius: 0.75rem;
+  .status-pill[data-state="processing"] {
+    border-color: rgba(0, 123, 255, 0.3);
+    color: var(--color-primary-darker);
+    background: rgba(0, 123, 255, 0.08);
+  }
+
+  .status-pill[data-state="completed"] {
+    border-color: rgba(25, 135, 84, 0.3);
+    color: var(--color-success);
+    background: rgba(25, 135, 84, 0.08);
+  }
+
+  .status-pill[data-state="failed"] {
+    border-color: rgba(220, 53, 69, 0.3);
+    color: var(--color-danger);
+    background: rgba(220, 53, 69, 0.1);
+  }
+
+  .log-terminal {
+    border-radius: 1rem;
     border: 1px solid var(--color-border);
-    background: #fff;
+    background: #0b192f;
+    color: #e2e8f0;
+    font-family: Menlo, Monaco, Consolas, monospace;
+    font-size: 0.9rem;
+    padding: 1.25rem;
+    height: 220px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  .report-panel {
+    border-radius: 1.75rem;
+  }
+
+  .summary-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem;
+  }
+
+  .summary-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #fff;
+  }
+
+  .summary-badge[data-state="success"] {
+    background: var(--color-success);
+  }
+
+  .summary-badge[data-state="warning"] {
+    background: var(--color-warning);
+    color: #212529;
+  }
+
+  .summary-badge[data-state="danger"] {
+    background: var(--color-danger);
+  }
+
+  .score-card {
+    min-width: 140px;
+    border-radius: 1rem;
+    border: 1px solid var(--color-border);
+    padding: 1rem 1.25rem;
+    text-align: center;
+    background: rgba(248, 249, 250, 0.9);
+  }
+
+  .score-card strong {
+    display: block;
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--color-primary-darker);
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+
+  .status-counter {
+    border-radius: 1.1rem;
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--color-border);
+    background: rgba(248, 249, 250, 0.7);
+  }
+
+  .status-counter h5 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .status-counter p {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+  }
+
+  .status-counter strong {
+    display: block;
+    margin-top: 0.45rem;
+    font-size: 1.8rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .status-counter.status-critical strong {
+    color: var(--color-danger);
+  }
+
+  .status-counter.status-warning strong {
+    color: var(--color-warning);
+  }
+
+  .status-counter.status-info strong {
+    color: var(--color-primary-darker);
+  }
+
+  .issue-board {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .issue-column {
+    border-radius: 1.25rem;
+    border: 1px solid var(--color-border);
+    padding: 1.25rem;
+    background: rgba(248, 249, 250, 0.65);
+  }
+
+  .issue-column h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .issue-column p {
+    margin: 0.25rem 0 0;
+    color: var(--color-text-secondary);
     font-size: 0.9rem;
   }
 
+  .issue-list {
+    margin-top: 1rem;
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .issue-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(222, 226, 230, 0.9);
+    background: #fff;
+    padding: 1rem 1.15rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .issue-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+  }
+
+  .issue-title {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+
+  .issue-meta {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.35rem;
+  }
+
+  .issue-description,
+  .issue-suggestion {
+    margin: 0.3rem 0;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+  }
+
+  .issue-suggestion {
+    color: var(--color-primary-darker);
+  }
+
   @media (max-width: 1024px) {
-    .query-panel,
-    .results-panel {
-      padding: 1.75rem;
+    .audit-hero,
+    .panel {
       border-radius: 1.25rem;
+      padding: 1.75rem;
     }
   }
 
   @media (max-width: 768px) {
-    .query-panel,
-    .results-panel {
+    .audit-hero,
+    .panel {
+      border-radius: 1rem;
       padding: 1.5rem;
+    }
+
+    .summary-top {
+      flex-direction: column;
+    }
+
+    .btn-primary {
       border-radius: 1rem;
     }
 
-    #audit-submit-btn {
-      width: 100%;
+    .upload-dropzone {
+      text-align: left;
     }
   }
 </style>
 
-<section class="space-y-8">
-  <!-- 顶部说明 + 上传区域（仿 fund-usage query-panel） -->
-  <div class="query-panel px-6 py-8 sm:px-8 sm:py-10">
-    <div class="grid gap-6 md:gap-8 lg:grid-cols-[1.35fr_1fr]">
-      <div class="space-y-4">
-        <p class="text-sm font-semibold uppercase tracking-[0.35em] text-secondary">Audit AI</p>
-        <h2 class="text-3xl font-bold text-primary">财政支出绩效目标智能审核系统</h2>
-        <p class="text-base text-secondary leading-relaxed">
-          通过大模型与规则结合，对申报表进行结构解析、刚性约束核查与语义一致性审查，生成标准化的审核报告，帮助您发现“红灯”“黄灯”与优化建议。
-        </p>
-        <p class="text-sm text-secondary">
-          路径：<span class="font-medium text-primary">首页 / 智能审核 / 申报表上传</span>
-        </p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-white/70 p-5 text-sm text-secondary md:p-6">
-        <p class="font-semibold text-primary">小贴士</p>
-        <ul class="mt-3 space-y-2">
-          <li>• 仅支持 <span class="font-semibold text-primary">.xlsx</span> 文件，建议单个文件小于 10MB。</li>
-          <li>• 模板字段建议保持完整，避免合并单元格和大面积空列。</li>
-          <li>• 文件仅用于本次审核，服务器不会长期保留源文件。</li>
-        </ul>
-      </div>
-    </div>
-
-    <form id="upload-form" class="mt-8 grid gap-5 md:mt-10 md:gap-6 lg:grid-cols-[1fr_auto]" autocomplete="off">
-      <label class="space-y-2 text-sm font-medium text-primary lg:col-span-1">
-        <span>请选择要审核的 Excel 申报表（仅支持 .xlsx）</span>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-          <input
-            id="excel-file"
-            name="file"
-            type="file"
-            class="file-input-hidden"
-            accept=".xlsx"
-            required
-          />
-          <label for="excel-file" class="file-picker">
-            <span class="bi bi-upload me-1" aria-hidden="true"></span>选择文件
-          </label>
-          <span id="file-name" class="file-name text-secondary">未选择任何文件</span>
-          <span class="badge-pill border border-border bg-white text-xs text-secondary">仅 .xlsx</span>
-        </div>
-        <p class="text-xs text-secondary mb-0">
-          上传后系统会自动发起异步审核任务，平均耗时约 10–15 秒，期间可在下方查看执行日志。
-        </p>
-      </label>
-
-      <div class="flex flex-col justify-end">
-        <button id="audit-submit-btn" type="submit" class="btn-primary w-full">
-          <span class="btn-spinner is-hidden" aria-hidden="true"></span>
-          <span class="btn-label">开始智能审核</span>
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <!-- 日志 + 审核结果区域（仿 fund-usage results-panel） -->
-  <div class="results-panel px-6 py-8 sm:px-8 sm:py-10">
-    <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p class="text-sm uppercase tracking-[0.35em] text-secondary">Audit Result</p>
-        <h3 class="text-2xl font-semibold text-primary">智能审核进度与结果</h3>
-      </div>
-      <p id="results-tip" class="text-sm text-secondary">
-        尚未开始审核，上传 Excel 后系统将自动创建审核任务。
+<section class="audit-shell">
+  <header class="audit-hero px-6 py-8 sm:px-8 sm:py-10">
+    <div class="space-y-4">
+      <p class="eyebrow">Audit AI</p>
+      <h2 class="text-4xl font-bold text-primary">财政支出绩效目标智能审核</h2>
+      <p class="text-base leading-relaxed text-secondary">
+        上传项目绩效 Excel 表格，系统会自动解析结构、执行刚性校验并触发智能语义复核，帮助您锁定红灯、黄灯与蓝灯提示，
+        对照报告即可快速完成整改并再次提交。
       </p>
     </div>
+  </header>
 
-    <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-      <!-- 日志区域 -->
-      <section class="space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <h4 class="text-sm font-semibold text-primary">智能体执行日志</h4>
-            <p class="text-xs text-secondary">轮询间隔：1.5 秒，最新日志自动滚动。</p>
+  <div class="grid gap-6 lg:grid-cols-[1.15fr_minmax(0,0.85fr)]">
+    <article class="panel px-6 py-6 sm:px-8 sm:py-8">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p class="text-xs uppercase tracking-[0.3em] text-secondary mb-1">Upload</p>
+          <h3 class="text-2xl font-semibold text-primary m-0">上传 Excel 申报表</h3>
+        </div>
+        <span class="text-xs text-secondary">平均耗时 10-15 秒</span>
+      </div>
+      <form id="upload-form" class="mt-6 space-y-5" autocomplete="off" enctype="multipart/form-data">
+        <div class="upload-dropzone">
+          <p class="text-sm font-semibold text-primary m-0">选择 Excel 文件</p>
+          <p class="text-sm text-secondary m-0">请选择符合模板的 .xlsx 文件，建议大小 &lt; 10MB。</p>
+          <input id="excel-file" name="file" type="file" class="file-input-hidden" accept=".xlsx" required />
+          <div class="flex flex-wrap items-center gap-3 mt-2">
+            <label for="excel-file" class="file-trigger">选择文件</label>
+            <span id="file-name" class="file-name">未选择文件</span>
+            <span class="text-xs text-secondary">仅限 .xlsx</span>
           </div>
-          <span id="log-status-pill" class="badge-pill border border-border bg-white text-xs text-secondary">
-            待开始
-          </span>
         </div>
-        <div id="log-card" class="log-box px-4 py-3">
-          <pre id="log-terminal" class="mb-0 text-sm text-secondary">等待任务开始…</pre>
+        <div class="space-y-3">
+          <button id="audit-submit-btn" type="submit" class="btn-primary">
+            <span class="btn-spinner is-hidden" aria-hidden="true"></span>
+            <span class="btn-label">开始智能审核</span>
+          </button>
+          <p class="text-xs text-secondary m-0">
+            系统将后台执行审核任务，可在右侧实时查看日志，完成后生成报告。
+          </p>
         </div>
+      </form>
+    </article>
+
+    <article class="panel live-panel px-6 py-6 sm:px-8 sm:py-8">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-xs uppercase tracking-[0.3em] text-secondary mb-1">Progress</p>
+          <h3 class="text-xl font-semibold text-primary m-0">执行日志</h3>
+        </div>
+        <span id="log-status" class="status-pill" data-state="pending">待开始</span>
+      </div>
+      <p id="progress-tip" class="mt-3 text-sm text-secondary">
+        上传 Excel 后，系统会进入排队并轮询执行结果。
+      </p>
+      <div class="mt-5">
+        <pre id="log-terminal" class="log-terminal">等待任务开始…</pre>
+      </div>
+    </article>
+  </div>
+
+  <article id="report-panel" class="panel report-panel px-6 py-6 sm:px-8 sm:py-8 hidden">
+    <div class="summary-top">
+      <div>
+        <p class="text-xs uppercase tracking-[0.3em] text-secondary mb-2">Report</p>
+        <h3 id="summary-project" class="text-2xl font-semibold text-primary m-0">-</h3>
+        <p class="mt-2 text-sm text-secondary">
+          以下报告汇总了刚性规则与智能语义复核的结论，可直接用于与业务侧沟通。
+        </p>
+      </div>
+      <div class="space-y-3 text-right">
+        <span id="summary-badge" class="summary-badge" data-state="warning">待开始</span>
+        <div class="score-card">
+          <span class="text-xs text-secondary">健康指数</span>
+          <strong id="score-value">-</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-grid mt-6">
+      <div class="status-counter status-critical">
+        <h5>红灯</h5>
+        <p>禁止提交</p>
+        <strong id="count-critical">0</strong>
+      </div>
+      <div class="status-counter status-warning">
+        <h5>黄灯</h5>
+        <p>需人工复核</p>
+        <strong id="count-warning">0</strong>
+      </div>
+      <div class="status-counter status-info">
+        <h5>蓝灯</h5>
+        <p>优化建议</p>
+        <strong id="count-info">0</strong>
+      </div>
+    </div>
+
+    <div class="issue-board mt-6">
+      <section id="critical-panel" class="issue-column">
+        <div>
+          <h4>红灯问题</h4>
+          <p>必须立即整改，否则不可提交。</p>
+        </div>
+        <div id="critical-list" class="issue-list"></div>
       </section>
 
-      <!-- 审核结果摘要 + 明细 -->
-      <section id="report-card" class="space-y-4 hidden">
-        <div class="summary-grid px-4 py-3 space-y-3">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="text-xs uppercase tracking-[0.25em] text-secondary">Summary</p>
-              <p id="summary-text" class="text-sm text-secondary">等待任务完成…</p>
-            </div>
-            <div class="text-right space-y-1">
-              <p class="text-xs text-secondary">总体结论</p>
-              <p id="summary-badge" class="text-base font-semibold text-secondary">待完成</p>
-            </div>
-          </div>
-          <div class="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p class="text-xs text-secondary">健康分</p>
-              <p id="score-badge" class="text-lg font-semibold text-primary">-</p>
-            </div>
-            <div>
-              <p class="text-xs text-secondary">红灯</p>
-              <p id="count-critical" class="text-lg font-semibold text-danger">0</p>
-            </div>
-            <div>
-              <p class="text-xs text-secondary">黄/蓝灯</p>
-              <p id="count-noncritical" class="text-lg font-semibold text-warning">0</p>
-            </div>
-          </div>
+      <section id="warning-panel" class="issue-column">
+        <div>
+          <h4>黄灯问题</h4>
+          <p>建议与业务负责人复核，确认风险后提交。</p>
         </div>
+        <div id="warning-list" class="issue-list"></div>
+      </section>
 
-        <div id="rigid-block" class="issue-section px-4 py-3 hidden">
-          <div class="mb-2 flex items-center justify-between">
-            <h5 class="text-sm font-semibold text-danger">
-              禁止提交 (Error)
-            </h5>
-          </div>
-          <div id="rigid-list"></div>
+      <section id="info-panel" class="issue-column">
+        <div>
+          <h4>蓝灯提示</h4>
+          <p>为优化建议，可结合实际情况选择采纳。</p>
         </div>
-
-        <div id="semantic-block" class="issue-section px-4 py-3 hidden">
-          <div class="mb-2 flex items-center justify-between">
-            <h5 class="text-sm font-semibold text-warning">
-              需人工复核 (Warning)
-            </h5>
-          </div>
-          <div id="semantic-list"></div>
-        </div>
-
-        <div id="suggestion-block" class="issue-section px-4 py-3 hidden">
-          <div class="mb-2 flex items-center justify-between">
-            <h5 class="text-sm font-semibold text-primary">
-              优化建议 (Suggestion)
-            </h5>
-          </div>
-          <div id="suggestion-list"></div>
-        </div>
+        <div id="info-list" class="issue-list"></div>
       </section>
     </div>
-  </div>
+  </article>
 </section>
 
 <script>
   (function () {
     const endpoints = {
       upload: '/indicators/api/audit/upload/',
-      status(taskId) { return `/indicators/api/audit/status/${taskId}/`; },
+      status(taskId) {
+        return `/indicators/api/audit/status/${taskId}/`;
+      },
     };
 
     const form = document.getElementById('upload-form');
+    if (!form) {
+      return;
+    }
+
     const fileInput = document.getElementById('excel-file');
     const fileNameText = document.getElementById('file-name');
     const submitBtn = document.getElementById('audit-submit-btn');
     const btnSpinner = submitBtn.querySelector('.btn-spinner');
     const btnLabel = submitBtn.querySelector('.btn-label');
 
-    const logCard = document.getElementById('log-card');
+    const progressTip = document.getElementById('progress-tip');
     const logTerminal = document.getElementById('log-terminal');
-    const logStatusPill = document.getElementById('log-status-pill');
-    const resultsTip = document.getElementById('results-tip');
+    const logStatus = document.getElementById('log-status');
 
-    const reportCard = document.getElementById('report-card');
-    const summaryText = document.getElementById('summary-text');
+    const reportPanel = document.getElementById('report-panel');
+    const summaryProject = document.getElementById('summary-project');
     const summaryBadge = document.getElementById('summary-badge');
-    const scoreBadge = document.getElementById('score-badge');
-    const countCritical = document.getElementById('count-critical');
-    const countNoncritical = document.getElementById('count-noncritical');
+    const scoreValue = document.getElementById('score-value');
 
-    const rigidBlock = document.getElementById('rigid-block');
-    const semanticBlock = document.getElementById('semantic-block');
-    const suggestionBlock = document.getElementById('suggestion-block');
-    const rigidList = document.getElementById('rigid-list');
-    const semanticList = document.getElementById('semantic-list');
-    const suggestionList = document.getElementById('suggestion-list');
+    const severityCounters = {
+      critical: document.getElementById('count-critical'),
+      warning: document.getElementById('count-warning'),
+      info: document.getElementById('count-info'),
+    };
+
+    const issueGroups = {
+      critical: {
+        list: document.getElementById('critical-list'),
+        emptyText: '暂未发现红灯问题。',
+      },
+      warning: {
+        list: document.getElementById('warning-list'),
+        emptyText: '暂无需要复核的黄灯问题。',
+      },
+      info: {
+        list: document.getElementById('info-list'),
+        emptyText: '暂无蓝灯提示，数据结构完整。',
+      },
+    };
 
     let pollTimer = null;
     let startedAt = null;
-    const MAX_WAIT_MS = 2 * 60 * 1000; // 2 minutes timeout
+    const MAX_WAIT_MS = 2 * 60 * 1000;
 
     function getCsrfToken() {
       const match = document.cookie.match(/csrftoken=([^;]+)/);
@@ -334,97 +564,87 @@
       btnLabel.textContent = isLoading ? '审核中…' : '开始智能审核';
     }
 
-    function setStatusPill(status) {
-      logStatusPill.textContent = status === 'processing'
-        ? '执行中'
-        : status === 'completed'
-          ? '已完成'
-          : status === 'failed'
-            ? '失败'
-            : '待开始';
+    function setStatusBadge(status) {
+      logStatus.dataset.state = status || 'pending';
+      let label = '待开始';
+      if (status === 'processing') label = '执行中';
+      else if (status === 'completed') label = '已完成';
+      else if (status === 'failed') label = '失败';
+      else if (status === 'pending') label = '排队中';
+      logStatus.textContent = label;
     }
 
     function appendLogs(logs) {
       if (!logs || !logs.length) {
         logTerminal.textContent = '等待任务开始…';
-        return;
+        return null;
       }
       const now = new Date();
       logTerminal.textContent = logs
         .map((item) => {
-          const t = now.toTimeString().slice(0, 8);
-          return `[${t}] [${item.status}] ${item.message}`;
+          const timestamp = now.toTimeString().slice(0, 8);
+          return `[${timestamp}] [${item.status}] ${item.message}`;
         })
         .join('\\n');
       logTerminal.scrollTop = logTerminal.scrollHeight;
+      return logs[logs.length - 1];
     }
 
-    function buildIssueList(target, items) {
-      target.innerHTML = '';
+    function renderIssueGroup(severity, items) {
+      const group = issueGroups[severity];
+      if (!group) return;
+      group.list.innerHTML = '';
       if (!items.length) {
         const empty = document.createElement('p');
-        empty.className = 'text-xs text-secondary';
-        empty.textContent = '暂无相关问题。';
-        target.appendChild(empty);
+        empty.className = 'text-sm text-secondary';
+        empty.textContent = group.emptyText;
+        group.list.appendChild(empty);
         return;
       }
-      items.forEach((it, idx) => {
-        const row = document.createElement('div');
-        row.className = 'issue-item';
-        row.innerHTML =
-          `<div class=\"issue-title\">${idx + 1}. ${it.title || '问题'}</div>` +
-          `<div class=\"issue-meta\">位置：${it.position || '未标明'}</div>` +
-          `<div class=\"text-sm text-secondary\">${it.description || ''}</div>`;
-        target.appendChild(row);
+      items.forEach((issue, index) => {
+        const card = document.createElement('article');
+        card.className = 'issue-card';
+        const source = issue.source_label || (issue.source === 'ai' ? '智能审查' : '系统');
+        card.innerHTML =
+          `<div class="issue-card-head"><span>#${index + 1}</span><span>${source}</span></div>` +
+          `<div class="issue-title">${issue.title || '问题'}</div>` +
+          `<div class="issue-meta">定位：${issue.position || '未标明'}</div>` +
+          `<p class="issue-description">${issue.description || ''}</p>` +
+          (issue.suggestion ? `<p class="issue-suggestion">建议：${issue.suggestion}</p>` : '');
+        group.list.appendChild(card);
       });
     }
 
+    function setSummaryState(state) {
+      summaryBadge.dataset.state = state;
+      if (state === 'success') summaryBadge.textContent = '审核通过，可提交';
+      else if (state === 'warning') summaryBadge.textContent = '存在提示，建议复核';
+      else summaryBadge.textContent = '存在红灯，请整改';
+    }
+
     function renderReport(result) {
-      reportCard.classList.remove('hidden');
+      reportPanel.classList.remove('hidden');
+      summaryProject.textContent = result.project_name || '未命名项目';
+      scoreValue.textContent = result.score ?? '-';
 
       const issues = result.issues || [];
-      const rigid = issues.filter((i) => i.severity === 'critical');
-      const warnings = issues.filter((i) => i.severity === 'warning');
-      const suggestions = issues.filter((i) => i.severity === 'info');
+      const groups = {
+        critical: issues.filter((item) => item.severity === 'critical'),
+        warning: issues.filter((item) => item.severity === 'warning'),
+        info: issues.filter((item) => item.severity !== 'critical' && item.severity !== 'warning'),
+      };
 
-      const statusLabel = rigid.length > 0 ? '不通过' : warnings.length > 0 ? '需优化' : '通过';
+      severityCounters.critical.textContent = groups.critical.length;
+      severityCounters.warning.textContent = groups.warning.length;
+      severityCounters.info.textContent = groups.info.length;
 
-      summaryText.textContent = `项目：${result.project_name || '未命名'}`;
-      summaryBadge.textContent = statusLabel;
-      summaryBadge.className =
-        statusLabel === '通过'
-          ? 'text-sm font-semibold text-success'
-          : statusLabel === '需优化'
-            ? 'text-sm font-semibold text-warning'
-            : 'text-sm font-semibold text-danger';
-      scoreBadge.textContent = result.score ?? '-';
-      countCritical.textContent = rigid.length;
-      countNoncritical.textContent = warnings.length + suggestions.length;
+      if (groups.critical.length) setSummaryState('danger');
+      else if (groups.warning.length) setSummaryState('warning');
+      else setSummaryState('success');
 
-      if (rigid.length) {
-        rigidBlock.classList.remove('hidden');
-        buildIssueList(rigidList, rigid);
-      } else {
-        rigidBlock.classList.add('hidden');
-        rigidList.innerHTML = '';
-      }
-
-      if (warnings.length) {
-        semanticBlock.classList.remove('hidden');
-        buildIssueList(semanticList, warnings);
-      } else {
-        semanticBlock.classList.add('hidden');
-        semanticList.innerHTML = '';
-      }
-
-      if (suggestions.length) {
-        suggestionBlock.classList.remove('hidden');
-        buildIssueList(suggestionList, suggestions);
-      } else {
-        suggestionBlock.classList.remove('hidden');
-        suggestionList.innerHTML =
-          '<p class="text-xs text-secondary">基础数据结构完整，暂无额外优化建议。</p>';
-      }
+      renderIssueGroup('critical', groups.critical);
+      renderIssueGroup('warning', groups.warning);
+      renderIssueGroup('info', groups.info);
     }
 
     function clearTask() {
@@ -442,46 +662,50 @@
         const resp = await fetch(endpoints.status(taskId));
         if (!resp.ok) {
           const text = await resp.text();
-          appendLogs([{ status: 'failed', message: '状态查询失败' }]);
           console.error('status error', text);
+          appendLogs([{ status: 'failed', message: '状态查询失败' }]);
           clearTask();
-          resultsTip.textContent = '任务状态查询失败，请稍后重试。';
-          setStatusPill('failed');
+          progressTip.textContent = '任务状态查询失败，请稍后重试。';
+          setStatusBadge('failed');
           return;
         }
         const data = await resp.json();
-        if (data.logs) appendLogs(data.logs);
-        setStatusPill(data.status);
+        const lastLog = data.logs ? appendLogs(data.logs) : null;
+        let tipUpdated = false;
+        if (lastLog && !['completed', 'failed'].includes(data.status)) {
+          progressTip.textContent = lastLog.message;
+          tipUpdated = true;
+        }
+        setStatusBadge(data.status);
 
-        if (startedAt && Date.now() - startedAt > MAX_WAIT_MS && data.status !== 'completed' && data.status !== 'failed') {
+        if (startedAt && Date.now() - startedAt > MAX_WAIT_MS && !['completed', 'failed'].includes(data.status)) {
           clearTask();
-          const timeoutMsg = '系统处理超时，请联系管理员或稍后重试。';
+          const timeoutMsg = '系统处理超时，请稍后重试或联系管理员。';
           appendLogs([{ status: 'failed', message: timeoutMsg }]);
-          resultsTip.textContent = timeoutMsg;
-          setStatusPill('failed');
+          progressTip.textContent = timeoutMsg;
+          setStatusBadge('failed');
           return;
         }
 
-        if (data.status === 'processing' || data.status === 'pending') {
-          resultsTip.textContent = '智能审核正在执行中，请耐心等待…';
+        if ((data.status === 'processing' || data.status === 'pending') && !tipUpdated) {
+          progressTip.textContent = '智能审核正在执行中，请耐心等待…';
         } else if (data.status === 'completed') {
           clearTask();
-          resultsTip.textContent = '审核已完成，下方为本次审核报告。';
+          progressTip.textContent = '审核完成，以下为本次报告。';
           renderReport(data.result || {});
         } else if (data.status === 'failed') {
           clearTask();
-          const msg = (data.logs && data.logs.length && data.logs[data.logs.length - 1].message) ||
-            data.error ||
-            '任务失败，请稍后重试。';
-          resultsTip.textContent = msg;
+          const latestLog = data.logs && data.logs.length ? data.logs[data.logs.length - 1].message : null;
+          const msg = latestLog || data.error || '任务失败，请稍后再试。';
+          progressTip.textContent = msg;
           appendLogs([{ status: 'failed', message: msg }]);
         }
-      } catch (err) {
-        console.error(err);
-        appendLogs([{ status: 'failed', message: '网络异常，请重试。' }]);
+      } catch (error) {
+        console.error(error);
+        appendLogs([{ status: 'failed', message: '网络异常，请稍后重试。' }]);
         clearTask();
-        resultsTip.textContent = '网络异常，已停止轮询，请稍后重试。';
-        setStatusPill('failed');
+        progressTip.textContent = '网络异常，已停止轮询。';
+        setStatusBadge('failed');
       }
     }
 
@@ -491,8 +715,8 @@
       pollTimer = setInterval(() => pollStatus(taskId), 1500);
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
       if (!fileInput.files.length) {
         alert('请先选择要上传的 Excel 文件（仅支持 .xlsx）。');
         return;
@@ -503,12 +727,10 @@
         return;
       }
 
-      // 更新已选文件名
       fileNameText.textContent = fileName;
-
       setLoading(true);
-      resultsTip.textContent = '任务已提交，正在排队等待执行…';
-      setStatusPill('processing');
+      progressTip.textContent = '任务已提交，正在排队等待执行…';
+      setStatusBadge('processing');
       startedAt = Date.now();
 
       const formData = new FormData();
@@ -525,31 +747,29 @@
           throw new Error(data.error || '上传失败');
         }
         localStorage.setItem('audit_task_id', data.task_id);
-        appendLogs([{ status: 'processing', message: '任务已提交，开始执行…' }]);
+        appendLogs([{ status: 'processing', message: '任务已提交，正在执行…' }]);
         startPolling(data.task_id);
       } catch (err) {
         alert(err.message || '提交失败，请稍后重试。');
         setLoading(false);
-        resultsTip.textContent = '任务提交失败，请检查网络后重试。';
-        setStatusPill('failed');
+        progressTip.textContent = '任务提交失败，请检查网络后再试。';
+        setStatusBadge('failed');
       }
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      fileInput.addEventListener('change', () => {
-        const fileName = fileInput.files[0]?.name || '未选择任何文件';
-        fileNameText.textContent = fileName;
-      });
-
-      const savedTask = localStorage.getItem('audit_task_id');
-      if (savedTask) {
-        setLoading(true);
-        startedAt = Date.now();
-        resultsTip.textContent = '已恢复未完成的审核任务，正在继续轮询状态…';
-        setStatusPill('processing');
-        startPolling(savedTask);
-      }
+    fileInput.addEventListener('change', () => {
+      const fileName = fileInput.files[0]?.name || '未选择文件';
+      fileNameText.textContent = fileName;
     });
+
+    const savedTask = localStorage.getItem('audit_task_id');
+    if (savedTask) {
+      setLoading(true);
+      startedAt = Date.now();
+      progressTip.textContent = '已恢复未完成的审核任务，正在继续轮询状态…';
+      setStatusBadge('processing');
+      startPolling(savedTask);
+    }
   })();
 </script>
 {% endblock %}

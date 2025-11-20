@@ -11,6 +11,11 @@ urlpatterns = [
         name="fund_usage_recommendation_page",
     ),
     path(
+        "audit/indicator/",
+        views.AuditIndicatorPage.as_view(),
+        name="audit_indicator_page",
+    ),
+    path(
         "api/fund-usage/recommendations/",
         views.fund_usage_recommendations,
         name="fund_usage_recommendations",

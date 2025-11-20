@@ -25,6 +25,12 @@ class FundUsageRecommendationPage(LoginRequiredMixin, TemplateView):
         return context
 
 
+class AuditIndicatorPage(LoginRequiredMixin, TemplateView):
+    """上传并查看指标审核结果的前端页面."""
+
+    template_name = "indicators/audit_indicator_table.html"
+
+
 @require_http_methods(["GET"])
 def fund_usage_recommendations(request):
     """API: 根据用户查询推荐资金用途."""

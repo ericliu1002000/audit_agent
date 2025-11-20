@@ -119,6 +119,13 @@ MILVUS_EMBED_DIM = int(os.getenv("MILVUS_EMBED_DIM", "1024"))
 EMBED_URL = os.getenv("EMBED_URL", "")
 EMBED_TOKEN = os.getenv("EMBED_TOKEN", "")
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{_redis_auth}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",
+    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

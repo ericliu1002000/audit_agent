@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import FormView
+from django.views.generic import FormView, TemplateView
 
 from .forms import MingjianAuthenticationForm, MingjianPasswordChangeForm
 from .services import auth_service
@@ -19,7 +19,7 @@ def _style_form(form):
 class LoginView(FormView):
     template_name = 'user/login.html'
     form_class = MingjianAuthenticationForm
-    success_url = reverse_lazy('indicators:fund_usage_recommendation_page')
+    success_url = reverse_lazy('home')
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
@@ -91,3 +91,9 @@ class LogoutView(View):
         auth_service.logout_user(request)
         messages.info(request, '您已退出明鉴系统。')
         return redirect('user:login')
+
+
+class HomeLandingPage(LoginRequiredMixin, TemplateView):
+    """登录后的功能封面页，提供各能力入口。"""
+
+    template_name = 'user/home.html'

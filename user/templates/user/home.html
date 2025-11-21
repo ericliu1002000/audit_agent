@@ -1,0 +1,145 @@
+{% extends 'user/layout.html' %}
+
+{% block title %}明鉴政务智能体{% endblock %}
+
+{% block content %}
+<style>
+  .home-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .home-hero {
+    border-radius: 1.75rem;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(10, 88, 202, 0.12));
+    border: 1px solid rgba(222, 226, 230, 0.8);
+    box-shadow: 0 25px 55px rgba(15, 23, 42, 0.08);
+  }
+
+  .home-hero h2 {
+    margin: 0;
+    font-size: 2.5rem;
+  }
+
+  .home-hero p {
+    margin: 0;
+  }
+
+  .home-hero .intro {
+    margin-top: 1rem;
+    font-size: 1.05rem;
+    color: var(--color-text-secondary);
+    line-height: 1.65;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    border-radius: 1.5rem;
+    padding: 1.75rem;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .feature-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-primary-darker);
+    background: rgba(0, 123, 255, 0.12);
+    letter-spacing: 0.05em;
+  }
+
+  .feature-card h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--color-text-primary);
+  }
+
+  .feature-card p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  .feature-card .cta {
+    align-self: flex-start;
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 999px;
+    padding: 0.65rem 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-darker));
+    box-shadow: 0 15px 35px rgba(10, 88, 202, 0.25);
+    text-decoration: none;
+  }
+
+  @media (max-width: 768px) {
+    .home-hero {
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+    }
+
+    .home-hero h2 {
+      font-size: 2rem;
+    }
+
+    .feature-card {
+      border-radius: 1.25rem;
+    }
+  }
+</style>
+
+<section class="home-shell">
+  <header class="home-hero">
+    <p class="text-sm font-semibold uppercase tracking-[0.4em] text-secondary">Welcome</p>
+    <h2 class="text-primary font-bold">欢迎使用 明鉴政务智能体系统</h2>
+    <p class="intro">
+      打造一站式财政绩效辅助平台，融合知识图谱与大模型能力，助力财政部门和业务处室更快完成指标设计、审核与优化。
+      选择下方能力，即刻开始体验。
+    </p>
+  </header>
+
+  <div class="feature-grid">
+    <article class="feature-card">
+      <span class="feature-tag">指标推荐</span>
+      <h3>资金用途智能推荐</h3>
+      <p>
+        输入业务目标或项目背景，系统会检索知识库并生成最匹配的资金用途方案，附带语义评分与参考指标提示，帮助快速搭建绩效框架。
+      </p>
+      <a class="cta" href="{% url 'indicators:fund_usage_recommendation_page' %}">
+        进入体验 →
+      </a>
+    </article>
+
+    <article class="feature-card">
+      <span class="feature-tag">智能审核</span>
+      <h3>绩效目标自动审核</h3>
+      <p>
+        上传 Excel 申报表，即可触发刚性规则校验与 AI 语义复核，红灯/黄灯/蓝灯分级呈现审核结果，帮助快速定位问题与整改建议。
+      </p>
+      <a class="cta" href="{% url 'indicators:audit_indicator_page' %}">
+        立即审核 →
+      </a>
+    </article>
+  </div>
+</section>
+{% endblock %}

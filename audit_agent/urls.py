@@ -17,11 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
-from indicators.views import FundUsageRecommendationPage
+from user.views import HomeLandingPage
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", FundUsageRecommendationPage.as_view(), name="home"),
+    path("", HomeLandingPage.as_view(), name="home"),
     path("", include("user.urls")),
     path("regions/", include("regions.urls")),
     path("indicators/", include("indicators.urls")),

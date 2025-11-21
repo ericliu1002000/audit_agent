@@ -551,7 +551,7 @@
 
     let pollTimer = null;
     let startedAt = null;
-    const MAX_WAIT_MS = 2 * 60 * 1000;
+    const MAX_WAIT_MS = 3 * 60 * 1000;
 
     function getCsrfToken() {
       const match = document.cookie.match(/csrftoken=([^;]+)/);
@@ -712,7 +712,7 @@
     function startPolling(taskId) {
       if (pollTimer) clearInterval(pollTimer);
       pollStatus(taskId);
-      pollTimer = setInterval(() => pollStatus(taskId), 1500);
+      pollTimer = setInterval(() => pollStatus(taskId), 2000);
     }
 
     form.addEventListener('submit', async (event) => {

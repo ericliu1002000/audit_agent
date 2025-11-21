@@ -93,7 +93,7 @@ class LogoutView(View):
         return redirect('user:login')
 
 
-class HomeLandingPage(LoginRequiredMixin, TemplateView):
-    """登录后的功能封面页，提供各能力入口。"""
+class HomeLandingPage(TemplateView):
+    """功能封面页，对所有访问者开放。"""
 
     template_name = 'user/home.html'

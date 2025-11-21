@@ -40,7 +40,7 @@ def _build_system_prompt() -> str:
         "遇到“*”“/”或空单元格时，输出 null。",
         "只有当原文明确出现“经常性”或“一次性”时，才填写 project_attribute，否则必须为 null。",
         "出现“成本指标”或“成本拆分”时，作为普通 Indicator 输出，level1 固定为“成本指标”。",
-        "严禁对原始内容做加减乘除或推理，原文是什么就输出什么。",
+        "严禁对原始内容做加减乘除或推理或翻译，原文是什么就输出什么。",
     ]
     rule_block = "\n".join(f"- {rule}" for rule in rules)
 

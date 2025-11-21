@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天津市级预算绩效目标审核分析报告</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1890ff; /* 政务蓝 */
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+        }
+        .header {
+            background: var(--card-bg);
+            padding: 20px 30px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: #002766; }
+        .header .sub-text { color: #666; font-size: 14px; margin-top: 5px; }
+        
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .kpi-title { color: #8c8c8c; font-size: 14px; margin-bottom: 10px; }
+        .kpi-value { font-size: 32px; font-weight: bold; color: #002766; }
+        .kpi-value.red { color: #cf1322; }
+        .kpi-value.green { color: #3f8600; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 两列布局 */
+            gap: 20px;
+        }
+        .chart-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            height: 450px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .chart-desc { font-size: 12px; color: #999; font-weight: normal; }
+        .full-width { grid-column: span 2; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1>天津市级预算绩效目标审核分析报告</h1>
+            <div class="sub-text">数据来源：2026年度项目申报库 | 样本量：100 | 生成时间：2025-11-21</div>
+        </div>
+        <div style="text-align: right;">
+            <span style="background:#e6f7ff; color:#1890ff; padding:5px 10px; border-radius:4px; font-size:12px;">智能审核系统 V1.0</span>
+        </div>
+    </div>
+
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <div class="kpi-title">项目总体平均分 (PQI)</div>
+            <div class="kpi-value" id="avg-score">-</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">一次性通过率</div>
+            <div class="kpi-value green" id="pass-rate">-</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">高风险项目数 (<60分)</div>
+            <div class="kpi-value red" id="risk-count">-</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">发现问题总数</div>
+            <div class="kpi-value" id="total-errors">-</div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card full-width">
+            <div class="chart-title">
+                共性问题分布 (Pareto Chart)
+                <span class="chart-desc">展示六大维度（含错别字）的问题频次，识别管理痛点</span>
+            </div>
+            <div id="chart-pareto" style="width: 100%; height: 90%;"></div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">
+                资金-质量四象限分析
+                <span class="chart-desc">X轴:资金(万元) | Y轴:得分</span>
+            </div>
+            <div id="chart-scatter" style="width: 100%; height: 90%;"></div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">
+                部门绩效管理质量排名 (红黑榜)
+                <span class="chart-desc">各委办局项目平均得分排名</span>
+            </div>
+            <div id="chart-ranking" style="width: 100%; height: 90%;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟数据 (由Python生成)
+        const mockData = {"overview": {"avg": 78.9, "pass_rate": 95.0, "risk_count": 5}, "errors": {"labels": ["错别字", "可衡量性", "相关性", "完整性", "匹配度", "合规性"], "values": [167, 122, 90, 55, 36, 15]}, "dept_ranking": {"labels": ["市**局", "市****委", "市*委", "市****委", "市**局", "市****委", "市**委", "市**委", "市**局", "市**局"], "values": [71.5, 72.8, 76.1, 77.1, 79.3, 80.2, 80.9, 81.0, 83.6, 85.5]}, "scatter": [[644.62, 84, "市**委", "PROJ-2026-001"], [903.18, 59, "市**委", "PROJ-2026-002"], [285.25, 34, "市**局", "PROJ-2026-003"], [5550.99, 78, "市****委", "PROJ-2026-004"], [719.46, 83, "市****委", "PROJ-2026-005"], [2356.8, 87, "市**局", "PROJ-2026-006"], [281.65, 79, "市****委", "PROJ-2026-007"], [8511.53, 93, "市**局", "PROJ-2026-008"], [286.27, 60, "市****委", "PROJ-2026-009"], [499.89, 85, "市**局", "PROJ-2026-010"], [330.6, 70, "市****委", "PROJ-2026-011"], [156.03, 88, "市**局", "PROJ-2026-012"], [368.09, 75, "市**局", "PROJ-2026-013"], [3094.6, 96, "市**委", "PROJ-2026-014"], [3739.71, 80, "市**委", "PROJ-2026-015"], [3670.66, 64, "市**委", "PROJ-2026-016"], [1058.47, 98, "市**局", "PROJ-2026-017"], [999.26, 79, "市**局", "PROJ-2026-018"], [617.38, 34, "市**局", "PROJ-2026-019"], [4405.45, 72, "市**局", "PROJ-2026-020"], [2330.12, 84, "市**局", "PROJ-2026-021"], [4869.54, 87, "市**局", "PROJ-2026-022"], [1351.95, 74, "市*委", "PROJ-2026-023"], [2039.13, 94, "市**委", "PROJ-2026-024"], [6050.9, 74, "市**委", "PROJ-2026-025"], [1195.17, 82, "市**委", "PROJ-2026-026"], [3450.06, 82, "市**委", "PROJ-2026-027"], [3653.97, 78, "市**局", "PROJ-2026-028"], [610.17, 68, "市****委", "PROJ-2026-029"], [794.77, 93, "市**委", "PROJ-2026-030"], [835.94, 76, "市**局", "PROJ-2026-031"], [778.67, 86, "市**委", "PROJ-2026-032"], [308.99, 79, "市**局", "PROJ-2026-033"], [402.45, 75, "市**局", "PROJ-2026-034"], [99.61, 72, "市**委", "PROJ-2026-035"], [821.5, 89, "市**委", "PROJ-2026-036"], [572.43, 73, "市**委", "PROJ-2026-037"], [513.55, 69, "市**委", "PROJ-2026-038"], [592.63, 69, "市****委", "PROJ-2026-039"], [182.76, 90, "市**委", "PROJ-2026-040"], [45.06, 93, "市****委", "PROJ-2026-041"], [507.76, 89, "市****委", "PROJ-2026-042"], [641.39, 57, "市**委", "PROJ-2026-043"], [1801.96, 89, "市****委", "PROJ-2026-044"], [2992.31, 78, "市****委", "PROJ-2026-045"], [1717.35, 65, "市****委", "PROJ-2026-046"], [458.05, 87, "市****委", "PROJ-2026-047"], [264.89, 78, "市**委", "PROJ-2026-048"], [2340.91, 77, "市**委", "PROJ-2026-049"], [1340.01, 84, "市****局", "PROJ-2026-050"], [769.71, 79, "市****局", "PROJ-2026-051"], [1911.39, 84, "市****委", "PROJ-2026-052"], [3267.92, 94, "市**委", "PROJ-2026-053"], [480.54, 72, "市****局", "PROJ-2026-054"], [387.09, 82, "市****局", "PROJ-2026-055"], [1483.66, 78, "市****委", "PROJ-2026-056"], [1738.27, 84, "市****局", "PROJ-2026-057"], [1798.76, 83, "市****局", "PROJ-2026-058"], [148.22, 93, "市****局", "PROJ-2026-059"], [870.1, 75, "市****委", "PROJ-2026-060"], [5040.09, 69, "市****局", "PROJ-2026-061"], [873.87, 71, "市****局", "PROJ-2026-062"], [599.11, 84, "市**委", "PROJ-2026-063"], [827.24, 76, "市****委", "PROJ-2026-064"], [1046.14, 79, "市****委", "PROJ-2026-065"], [4566.67, 78, "市****委", "PROJ-2026-066"], [6554.03, 73, "市****委", "PROJ-2026-067"], [790.94, 78, "市****委", "PROJ-2026-068"], [387.55, 82, "市****局", "PROJ-2026-069"], [375.34, 95, "市****局", "PROJ-2026-070"], [456.5, 87, "市****局", "PROJ-2026-071"], [191.72, 95, "市****局", "PROJ-2026-072"], [3750.66, 62, "市****局", "PROJ-2026-073"], [450.41, 99, "市**局", "PROJ-2026-074"], [13722.78, 88, "市**委", "PROJ-2026-075"], [573.64, 68, "市**委", "PROJ-2026-076"], [349.88, 84, "市****局", "PROJ-2026-077"], [759.95, 85, "市**委", "PROJ-2026-078"], [3316.61, 65, "市****委", "PROJ-2026-079"], [3672.88, 69, "市****局", "PROJ-2026-080"], [932.69, 65, "市****委", "PROJ-2026-081"], [248.34, 73, "市****局", "PROJ-2026-082"], [2493.65, 80, "市**委", "PROJ-2026-083"], [151.03, 85, "市**委", "PROJ-2026-084"], [800.36, 67, "市****委", "PROJ-2026-085"], [445.94, 89, "市****委", "PROJ-2026-086"], [3611.05, 88, "市**委", "PROJ-2026-087"], [1356.11, 84, "市**委", "PROJ-2026-088"], [2457.02, 83, "市****局", "PROJ-2026-089"], [456.13, 92, "市****局", "PROJ-2026-090"], [472.64, 87, "市****局", "PROJ-2026-091"], [2678.55, 84, "市**局", "PROJ-2026-092"], [774.86, 70, "市****局", "PROJ-2026-093"], [298.46, 84, "市**委", "PROJ-2026-094"], [584.41, 90, "市**委", "PROJ-2026-095"], [634.87, 78, "市****局", "PROJ-2026-096"], [440.69, 67, "市**委", "PROJ-2026-097"], [272.74, 84, "市****委", "PROJ-2026-098"], [537.42, 59, "市****局", "PROJ-2026-099"], [646.19, 84, "市**局", "PROJ-2026-100"]]};
+
+        // 填充 KPI
+        document.getElementById('avg-score').innerText = mockData.overview.avg;
+        document.getElementById('pass-rate').innerText = mockData.overview.pass_rate + "%";
+        document.getElementById('risk-count').innerText = mockData.overview.risk_count;
+        document.getElementById('total-errors').innerText = mockData.errors.values.reduce((a, b) => a + b, 0);
+
+        // 1. 帕累托图 (错误分布)
+        const chartPareto = echarts.init(document.getElementById('chart-pareto'));
+        chartPareto.setOption({
+            tooltip: { trigger: 'axis' },
+            grid: { top: '15%', bottom: '10%', left: '10%', right: '10%' },
+            xAxis: {
+                type: 'category',
+                data: mockData.errors.labels,
+                axisLabel: { interval: 0 }
+            },
+            yAxis: [
+                { type: 'value', name: '问题频次' },
+                { type: 'value', name: '占比', min: 0, max: 100, show: false }
+            ],
+            series: [
+                {
+                    name: '频次',
+                    type: 'bar',
+                    data: mockData.errors.values,
+                    itemStyle: { color: '#1890ff' },
+                    barWidth: '40%'
+                },
+                // 模拟帕累托累计曲线
+                {
+                    name: '累计占比',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    itemStyle: { color: '#faad14' },
+                    data: [34, 59, 77, 88, 95, 100] // 简单的模拟数据，实际应计算
+                }
+            ]
+        });
+
+        // 2. 四象限图
+        const chartScatter = echarts.init(document.getElementById('chart-scatter'));
+        chartScatter.setOption({
+            tooltip: {
+                formatter: function (param) {
+                    return param.data[2] + "<br/>" + 
+                           "资金: " + param.data[0] + "万元<br/>" + 
+                           "得分: " + param.data[1] + "分";
+                }
+            },
+            xAxis: { 
+                name: '资金预算(万元)', 
+                type: 'log', // 使用对数坐标防止资金差异过大
+                nameLocation: 'middle',
+                nameGap: 25
+            },
+            yAxis: { 
+                name: '质量得分', 
+                min: 0, max: 100,
+                splitLine: { show: false } 
+            },
+            visualMap: {
+                min: 0, max: 100,
+                dimension: 1,
+                orient: 'horizontal',
+                right: 10, top: 0,
+                text: ['高分', '低分'],
+                calculable: true,
+                inRange: { color: ['#ff4d4f', '#faad14', '#52c41a'] } // 红黄绿渐变
+            },
+            series: [{
+                type: 'scatter',
+                symbolSize: 10,
+                data: mockData.scatter,
+                markLine: {
+                    silent: true,
+                    lineStyle: { color: '#999', type: 'dashed' },
+                    data: [
+                        { yAxis: 60, label: { formatter: '及格线' } },
+                        { xAxis: 1000, label: { formatter: '重点资金线' } }
+                    ]
+                },
+                markArea: {
+                    silent: true,
+                    data: [
+                        // 重点监管区 (钱多分低) - 右下角
+                        [{
+                            xAxis: 1000,
+                            yAxis: 0,
+                            itemStyle: { color: 'rgba(255, 77, 79, 0.1)' }
+                        }, {
+                            xAxis: 100000,
+                            yAxis: 60
+                        }]
+                    ]
+                }
+            }]
+        });
+
+        // 3. 部门排行榜
+        const chartRanking = echarts.init(document.getElementById('chart-ranking'));
+        chartRanking.setOption({
+            tooltip: { trigger: 'axis' },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'value', max: 100 },
+            yAxis: { type: 'category', data: mockData.dept_ranking.labels },
+            series: [{
+                name: '平均得分',
+                type: 'bar',
+                data: mockData.dept_ranking.values,
+                label: { show: true, position: 'right' },
+                itemStyle: {
+                    color: function(params) {
+                        // 后三名用红色，其他蓝色
+                        if (params.dataIndex < 3) return '#ff4d4f'; 
+                        return '#1890ff';
+                    }
+                }
+            }]
+        });
+
+        // 响应窗口缩放
+        window.addEventListener('resize', function() {
+            chartPareto.resize();
+            chartScatter.resize();
+            chartRanking.resize();
+        });
+    </script>
+</body>
+</html>

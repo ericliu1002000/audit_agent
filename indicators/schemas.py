@@ -6,28 +6,28 @@ class ProjectInfoSchema(BaseModel):
     项目基础信息 (Pydantic Model)
     用于 AI 解析后的结构化输出，非数据库模型。
     """
-    project_name: str = Field(..., description="项目名称")
-    department: str = Field(..., description="主管预算部门")
-    implementation_unit: str = Field(..., description="项目实施单位")
+    project_name: Optional[str] = Field(None, description="项目名称")
+    department: Optional[str] = Field(None, description="主管预算部门")
+    implementation_unit: Optional[str] = Field(None, description="项目实施单位")
     project_attribute: Optional[str] = Field(None, description="项目属性，如'经常性项目'或'一次性项目'")
     start_date: Optional[str] = Field(None, description="项目开始时间")
     end_date: Optional[str] = Field(None, description="项目结束时间")
     
     # 资金部分 (统一单位：万元)
-    total_budget: float = Field(..., description="项目资金总额")
-    fiscal_funds: float = Field(..., description="其中：财政拨款金额")
-    other_funds: float = Field(0.0, description="其他资金金额")
+    total_budget: float = Field(0.0, description="项目资金总额（单位万元）")
+    fiscal_funds: float = Field(0.0, description="其中：财政拨款金额（单位万元）")
+    other_funds: float = Field(0.0, description="其他资金金额（单位万元）")
     
-    goal_description: str = Field(..., description="绩效目标完整文本描述")
+    goal_description: Optional[str] = Field(None, description="绩效目标完整文本描述")
 
 class IndicatorSchema(BaseModel):
     """
     单条绩效指标 (Pydantic Model)
     涵盖：产出指标、效益指标、满意度指标、成本指标
     """
-    level1: str = Field(..., description="一级指标，如'产出指标', '效益指标', '成本指标'")
+    level1: Optional[str] = Field(None, description="一级指标，如'产出指标', '效益指标', '成本指标'")
     level2: Optional[str] = Field(None, description="二级指标，如'数量指标', '质量指标'")
-    level3: str = Field(..., description="三级指标/具体指标名称，如'培训人数', '系统维护数量'")
+    level3: Optional[str] = Field(None, description="三级指标/具体指标名称，如'培训人数', '系统维护数量'")
     
     # 核心：数值与符号分离
     # 允许 operator 为 null (针对定性指标)
@@ -38,7 +38,7 @@ class IndicatorSchema(BaseModel):
     
     unit: Optional[str] = Field(None, description="单位，如'人', '万元', '%', '个'")
     
-    raw_text: str = Field(..., description="原始指标值文本，如 '≥95%' 用于人工核对")
+    raw_text: Optional[str] = Field(None, description="原始指标值文本，如 '≥95%' 用于人工核对")
 
 class PerformanceDeclarationSchema(BaseModel):
     """整个申报表的数据契约"""

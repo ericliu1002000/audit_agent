@@ -93,10 +93,11 @@ def extract_data_with_ai(markdown_text: str) -> PerformanceDeclarationSchema:
 if __name__ == "__main__":
     from indicators.services.utils.excel_to_markdown import parse_excel_to_markdown
     example_path = "/Users/liuxiaoqi/SynologyDrive/work/势术/合作/审计智能体/指标相关/实例/天津-高校改革.xlsx"
+    s = ''
     try:
-        str = parse_excel_to_markdown(example_path)
+        s = parse_excel_to_markdown(example_path)
     except Exception as exc:
         print(f"解析 Excel 失败: {exc}")
 
     from indicators.services.check_indicator_excel.ai_extractor_from_md import extract_data_with_ai
-    extract_data_with_ai(str)
+    extract_data_with_ai(s)

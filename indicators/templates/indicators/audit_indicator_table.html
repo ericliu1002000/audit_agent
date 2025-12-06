@@ -551,6 +551,7 @@
 
     let pollTimer = null;
     let startedAt = null;
+    const clientLogs = [];
     const MAX_WAIT_MS = 3 * 60 * 1000;
 
     function getCsrfToken() {
@@ -579,13 +580,26 @@
         logTerminal.textContent = '等待任务开始…';
         return null;
       }
-      const now = new Date();
-      logTerminal.textContent = logs
+
+      // 为每一条日志在首次出现时记录时间戳，之后不再变化
+      logs.forEach((item, index) => {
+        const cached = clientLogs[index];
+        if (!cached || cached.status !== item.status || cached.message !== item.message) {
+          clientLogs[index] = {
+            status: item.status,
+            message: item.message,
+            timestamp: new Date(),
+          };
+        }
+      });
+      clientLogs.length = logs.length;
+
+      logTerminal.textContent = clientLogs
         .map((item) => {
-          const timestamp = now.toTimeString().slice(0, 8);
+          const timestamp = item.timestamp.toTimeString().slice(0, 8);
           return `[${timestamp}] [${item.status}] ${item.message}`;
         })
-        .join('\\n');
+        .join('\n');
       logTerminal.scrollTop = logTerminal.scrollHeight;
       return logs[logs.length - 1];
     }

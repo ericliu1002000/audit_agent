@@ -32,7 +32,8 @@ def normalize_rigid_issue(issue: Dict) -> Dict:
     """
     severity_map = {
         "ERROR": "critical",
-        "WARNING": "warning"
+        "WARNING": "warning",
+        "INFO": "info",
     }
     
     return {
@@ -174,7 +175,7 @@ def audit_project_file(
         _maybe_log("processing", "正在读取并解析 Excel 结构...")
         markdown_text = parse_excel_to_markdown(file_path)
 
-        _maybe_log("processing", "AI 正在分析数据，请耐心等待约 10-15 秒...")
+        _maybe_log("processing", "AI 正在分析数据，请耐心等待约 20-30 秒...")
         pydantic_data = extract_data_with_ai(markdown_text)
 
         _maybe_log("processing", "正在进行资金与逻辑校验...")
@@ -188,7 +189,7 @@ def audit_project_file(
 
         semantic_raw_issues: Optional[List[Dict[str, Any]]] = None
         if len(critical_after_rigid) < 5:
-            _maybe_log("processing", "AI 正在进行深度语义复核，请等待约 10 秒...")
+            _maybe_log("processing", "AI 正在进行深度语义复核，请等待约 30 秒...")
             semantic_raw_issues = run_semantic_check(pydantic_data)
 
         result = format_final_report(pydantic_data, rigid_raw_issues, semantic_raw_issues)

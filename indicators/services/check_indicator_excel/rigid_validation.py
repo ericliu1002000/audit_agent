@@ -7,7 +7,7 @@ from datetime import datetime
 from indicators.schemas import PerformanceDeclarationSchema
 
 
-def parse_flexible_date(text: str) -> datetime | None:
+def parse_flexible_date(text: str|None) -> datetime | None:
     """
     高容错日期解析：用于从指标描述中提取时间信息，支持多种格式的“散装文本”，便于后续比较。
 
@@ -72,6 +72,31 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
     def add_warning(loc, msg):
         results.append({"level": "WARNING", "loc": loc, "msg": msg})
 
+    def add_info(loc, msg):
+        results.append({"level": "INFO", "loc": loc, "msg": msg})
+
+    def _is_blank(value: Any) -> bool:
+        """判断字段是否为空（None 或 空字符串）。"""
+        return value is None or (isinstance(value, str) and value.strip() == "")
+
+    # =========================================
+    # 0. 项目基础信息完整性校验
+    # -----------------------------------------
+    # 业务上要求：
+    # - 项目名称: 未填写 -> ERROR
+    # - 主管预算部门: 未填写 -> ERROR
+    # - 项目实施单位: 未填写 -> INFO
+    # =========================================
+    project_info = data.project_info
+    if _is_blank(getattr(project_info, "project_name", None)):
+        add_error("项目名称", "项目名称未填写。")
+    if _is_blank(getattr(project_info, "department", None)):
+        add_error("主管预算部门", "主管预算部门未填写。")
+    if _is_blank(getattr(project_info, "implementation_unit", None)):
+        add_info("项目实施单位", "项目实施单位未填写，仅作提醒。")
+    if _is_blank(getattr(project_info, "goal_description")):
+        add_error("绩效目标", "绩效目标描述未填写")
+
     # =========================================
     # 1. 资金平衡性校验 (Critical Error)
     # -----------------------------------------
@@ -91,18 +116,18 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
     # =========================================
     # 2. 成本拆分校验 (Critical Error)
     # -----------------------------------------
-    # level1=成本指标 的合计应不超过项目总预算。
+    # level1=成本指标 的合计应不超过项目总预算。  2025-12-05  这里容易出现 万元+元的错误，去掉这个判断。
     # =========================================
-    cost_items = [ind for ind in data.indicators if ind.level1 == '成本指标']
-    if cost_items:
-        # 累加值 (排除 None 和 非数字)
-        cost_sum = sum([ind.target_value for ind in cost_items if isinstance(ind.target_value, (int, float))])
+    # cost_items = [ind for ind in data.indicators if ind.level1 == '成本指标']
+    # if cost_items:
+    #     # 累加值 (排除 None 和 非数字)
+    #     cost_sum = sum([ind.target_value for ind in cost_items if isinstance(ind.target_value, (int, float))])
         
-        if cost_sum > total + 0.1:
-            add_error(
-                "成本指标",
-                f"成本指标明细之和({cost_sum}万元)超出了项目总资金预算({total}万元)。"
-            )
+    #     if cost_sum > total + 0.1:
+    #         add_error(
+    #             "成本指标",
+    #             f"成本指标明细之和({cost_sum}万元)超出了项目总资金预算({total}万元)。"
+    #         )
 
     # =========================================
     # 3. 完整性校验 (Critical Error)
@@ -158,6 +183,10 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
         # 如果值是 None 或者 包含 * 号的字符串
         val_str = str(ind.target_value) if ind.target_value is not None else ""
         raw_str = ind.raw_text or ""
+
+        if _is_blank(raw_str):
+            add_error(f"指标：{ind.level3}", "指标值未填写")
+
         
         if (ind.target_value is None) or ('*' in val_str) or ('*' in raw_str):
             # 定性指标(如"有效提升")如果没有数值是允许的，但不能包含 *
@@ -171,6 +200,8 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
         if ind.unit == '%' and isinstance(ind.target_value, (int, float)):
             if ind.target_value > 100:
                 add_warning(f"指标: {ind.level3}", f"百分比指标数值({ind.target_value}%)异常，通常不应超过100%。")
+        
+        
 
     # =========================================
     # 6. 基础属性枚举校验
@@ -184,13 +215,14 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
 if __name__ == "__main__":
     from indicators.services.utils.excel_to_markdown import parse_excel_to_markdown
     example_path = "/Users/liuxiaoqi/SynologyDrive/work/势术/合作/审计智能体/指标相关/实例/天津-高校改革.xlsx"
+    str1 = ''
     try:
-        str = parse_excel_to_markdown(example_path)
+        str1 = parse_excel_to_markdown(example_path)
     except Exception as exc:
         print(f"解析 Excel 失败: {exc}")
 
     from indicators.services.check_indicator_excel.ai_extractor_from_md import extract_data_with_ai
-    s = extract_data_with_ai(str)
+    s = extract_data_with_ai(str1)
 
     from indicators.services.check_indicator_excel.rigid_validation import run_rigid_validation
     run_rigid_validation(s)

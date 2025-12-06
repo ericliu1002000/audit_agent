@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 from celery import shared_task
 from django.core.cache import cache
 
-from indicators.services.check_indicator_excel import audit_pipeline
+from indicator_audit.services.check_indicator_excel import audit_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,9 @@ def _cache_key(task_id: str) -> str:
     return f"audit_task_{task_id}"
 
 
-def _update_log(task_id: str, status: str, message: str, result: Any | None = None) -> Dict:
+def _update_log(
+    task_id: str, status: str, message: str, result: Any | None = None
+) -> Dict:
     """追加日志并同步任务状态到 Redis。"""
 
     key = _cache_key(task_id)
@@ -51,15 +53,25 @@ def run_audit_task(self, file_path: str, task_id: str) -> Dict[str, Any]:
         _update_log(task_id, "processing", "正在进行资金与逻辑校验...")
         rigid_issues = audit_pipeline.run_rigid_validation(pydantic_data)
 
-        normalized_rigid = [audit_pipeline.normalize_rigid_issue(item) for item in rigid_issues]
-        critical_count = sum(1 for issue in normalized_rigid if issue["severity"] == "critical")
+        normalized_rigid = [
+            audit_pipeline.normalize_rigid_issue(item) for item in rigid_issues
+        ]
+        critical_count = sum(
+            1 for issue in normalized_rigid if issue["severity"] == "critical"
+        )
 
         semantic_issues = []
         if critical_count < 5:
-            _update_log(task_id, "processing", "AI 正在进行深度语义复核，请等待约 10 秒...")
+            _update_log(
+                task_id,
+                "processing",
+                "AI 正在进行深度语义复核，请等待约 10 秒...",
+            )
             semantic_issues = audit_pipeline.run_semantic_check(pydantic_data)
 
-        final_result = audit_pipeline.format_final_report(pydantic_data, rigid_issues, semantic_issues)
+        final_result = audit_pipeline.format_final_report(
+            pydantic_data, rigid_issues, semantic_issues
+        )
         _update_log(task_id, "completed", "审核完成！", result=final_result)
         return final_result
 
@@ -67,3 +79,4 @@ def run_audit_task(self, file_path: str, task_id: str) -> Dict[str, Any]:
         logger.exception("审核任务失败: %s", exc)
         _update_log(task_id, "failed", f"任务失败：{exc}")
         raise
+

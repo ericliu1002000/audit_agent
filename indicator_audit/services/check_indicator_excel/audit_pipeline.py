@@ -1,29 +1,22 @@
 import logging
 from typing import Any, Callable, Dict, List, Optional
 
-# 引入之前写好的各个模块
-
-
-from indicators.services.utils.excel_to_markdown import (
+from indicator_audit.services.utils.excel_to_markdown import (
     parse_excel_to_markdown as _parse_excel_to_markdown,
 )
-from indicators.services.check_indicator_excel.ai_extractor_from_md import (
+from indicator_audit.services.check_indicator_excel.ai_extractor_from_md import (
     extract_data_with_ai as _extract_data_with_ai,
 )
-from indicators.services.check_indicator_excel.rigid_validation import (
+from indicator_audit.services.check_indicator_excel.rigid_validation import (
     run_rigid_validation as _run_rigid_validation,
 )
-
-from indicators.services.check_indicator_excel.semantic_validator import (
+from indicator_audit.services.check_indicator_excel.semantic_validator import (
     run_semantic_check as _run_semantic_check,
 )
 
 
 logger = logging.getLogger(__name__)
 
-# ==========================================
-# 1. 定义标准化的输出结构适配器
-# ==========================================
 
 def normalize_rigid_issue(issue: Dict) -> Dict:
     """
@@ -35,16 +28,17 @@ def normalize_rigid_issue(issue: Dict) -> Dict:
         "WARNING": "warning",
         "INFO": "info",
     }
-    
+
     return {
-        "source": "rules",      # 标识来源：规则引擎
+        "source": "rules",  # 标识来源：规则引擎
         "source_label": "刚性规则",
-        "severity": severity_map.get(issue['level'], "info"),
+        "severity": severity_map.get(issue["level"], "info"),
         "title": f"{issue['loc']}校验未通过",
-        "description": issue['msg'],
-        "position": issue['loc'],
-        "suggestion": "请根据规则修正Excel中的对应数据。" # 刚性错误通常不需要复杂建议，改对为止
+        "description": issue["msg"],
+        "position": issue["loc"],
+        "suggestion": "请根据规则修正Excel中的对应数据。",  # 刚性错误通常不需要复杂建议，改对为止
     }
+
 
 def normalize_semantic_issue(issue: Dict) -> Dict:
     """
@@ -58,22 +52,19 @@ def normalize_semantic_issue(issue: Dict) -> Dict:
         "低": "info",
         "HIGH": "warning",
         "MEDIUM": "warning",
-        "LOW": "info"
-    }
-    
-    return {
-        "source": "ai",         # 标识来源：AI引擎
-        "source_label": "智能审查",
-        "severity": severity_map.get(issue.get('severity', '中'), "info"),
-        "title": issue.get('type', '逻辑建议'),
-        "description": issue.get('message', ''),
-        "position": issue.get('location', '全局'),
-        "suggestion": issue.get('suggestion', '')
+        "LOW": "info",
     }
 
-# ==========================================
-# 2. 主流程函数
-# ==========================================
+    return {
+        "source": "ai",  # 标识来源：AI引擎
+        "source_label": "智能审查",
+        "severity": severity_map.get(issue.get("severity", "中"), "info"),
+        "title": issue.get("type", "逻辑建议"),
+        "description": issue.get("message", ""),
+        "position": issue.get("location", "全局"),
+        "suggestion": issue.get("suggestion", ""),
+    }
+
 
 def parse_excel_to_markdown(file_path: str) -> str:
     """读取 Excel 文件并转成 Markdown 文本，失败会抛出 ValueError。"""
@@ -201,15 +192,16 @@ def audit_project_file(
         logger.warning(f"Audit failed: {e}")
         return {
             "success": False,
-            "error_msg": str(e)
+            "error_msg": str(e),
         }
     except Exception as e:
         # 系统级错误
         logger.error(f"Audit system error: {e}", exc_info=True)
         return {
             "success": False,
-            "error_msg": "系统内部错误，请联系管理员。"
+            "error_msg": "系统内部错误，请联系管理员。",
         }
+
 
 def calculate_score(issues: List[Dict]) -> int:
     """
@@ -217,10 +209,11 @@ def calculate_score(issues: List[Dict]) -> int:
     """
     score = 100
     for issue in issues:
-        if issue['severity'] == 'critical':
+        if issue["severity"] == "critical":
             score -= 10
-        elif issue['severity'] == 'warning':
+        elif issue["severity"] == "warning":
             score -= 5
-        elif issue['severity'] == 'info':
+        elif issue["severity"] == "info":
             score -= 1
     return max(score, 0)
+

@@ -9,7 +9,6 @@ from django.conf import settings
 from utils.vector_api import call_begm3_api
 from indicators.models import Indicator
 from indicators.vector_utils import get_milvus_manager
-from indicators.services.check_indicator_excel.tasks import run_audit_task  # noqa: F401 - 供 Celery 自动发现
 
 logger = logging.getLogger(__name__)
 

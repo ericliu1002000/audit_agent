@@ -9,21 +9,17 @@ from __future__ import annotations
 
 import json
 import logging
-import re
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from pydantic import ValidationError
 
-from indicators.schemas import PerformanceDeclarationSchema, get_ai_extraction_schema
+from indicator_audit.schemas import PerformanceDeclarationSchema, get_ai_extraction_schema
 from utils.deepseek_client import invoke_deepseek
 from utils.extract_text_from_response import extract_text_from_response
 from utils.clean_json_string import clean_json_string
 
 
 logger = logging.getLogger(__name__)
-
-
-
 
 
 def _build_system_prompt() -> str:
@@ -53,9 +49,6 @@ def _build_system_prompt() -> str:
         "JSON Schema 定义如下（仅参考结构，不要原样输出）：\n"
         f"{schema_definition}"
     )
-
-
-
 
 
 def extract_data_with_ai(markdown_text: str) -> PerformanceDeclarationSchema:
@@ -90,14 +83,3 @@ def extract_data_with_ai(markdown_text: str) -> PerformanceDeclarationSchema:
         logger.exception("AI 抽取结果未通过 Schema 校验: %s", parsed_payload)
         raise ValueError("AI 抽取结果与数据契约不匹配，请检查输入内容或提示词。") from exc
 
-if __name__ == "__main__":
-    from indicators.services.utils.excel_to_markdown import parse_excel_to_markdown
-    example_path = "/Users/liuxiaoqi/SynologyDrive/work/势术/合作/审计智能体/指标相关/实例/天津-高校改革.xlsx"
-    s = ''
-    try:
-        s = parse_excel_to_markdown(example_path)
-    except Exception as exc:
-        print(f"解析 Excel 失败: {exc}")
-
-    from indicators.services.check_indicator_excel.ai_extractor_from_md import extract_data_with_ai
-    extract_data_with_ai(s)

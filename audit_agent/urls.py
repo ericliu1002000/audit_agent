@@ -25,4 +25,5 @@ urlpatterns = [
     path("", include("user.urls")),
     path("regions/", include("regions.urls")),
     path("indicators/", include("indicators.urls")),
+    path("indicator_audit/", include("indicator_audit.urls")),
 ]

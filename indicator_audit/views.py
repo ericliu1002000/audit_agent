@@ -77,11 +77,15 @@ def audit_upload(request):
             json_dumps_params={"ensure_ascii": False},
         )
 
+    original_filename = uploaded_file.name or ""
+    file_size = getattr(uploaded_file, "size", None) or 0
+
     task_id = uuid4().hex
     file_path = _save_uploaded_file(uploaded_file)
     _init_task_status(task_id)
 
-    run_audit_task.delay(file_path, task_id)
+    # 传递文件元信息，便于 Celery 任务落库到 AuditFile
+    run_audit_task.delay(file_path, task_id, original_filename, file_size)
 
     return JsonResponse({"task_id": task_id}, json_dumps_params={"ensure_ascii": False})
 
@@ -99,4 +103,3 @@ def audit_status(request, task_id: str):
         )
 
     return JsonResponse(data, json_dumps_params={"ensure_ascii": False})
-

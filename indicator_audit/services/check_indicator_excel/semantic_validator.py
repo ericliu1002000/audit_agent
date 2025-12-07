@@ -27,15 +27,29 @@ def _build_system_prompt() -> str:
         "1. 目标支撑度：绩效目标里承诺要做的事，指标里是否存在对应的可衡量项；\n"
         "2. 指标可衡量性：是否存在“有效提升”等模糊描述，建议量化；\n"
         "3. 轻量常识检查（可选）：仅在出现明显不合逻辑的情况时给出低级别提示，例如“满意度目标为 -10%”或“故障率目标为 200%”。"
+        "4. 是否存在错别字。 如有错别字，severity值设置为'中',issue_type设置为：completeness，并给出修改建议。"
         "不要因为主观觉得“数值太大/太小”就报错，尤其不要纠结 5% 和 0.05 这类比例换算问题。\n\n"
         "特别说明：\n"
         "- 所有数值均来自系统解析的 Excel 数据，请假定它们在单位和换算（如百分比 5% 存储为 0.05）上已经经过规则校验。\n"
         "- 当同一指标同时给出 raw_text（例如 “5%”）和 target_value（例如 0.05）时，请把它们视为等价的写法，不要认为这是“数值异常”。\n"
         "- 你不需要对数值做“合理性打分”，只在“文字描述”和“数值/单位”之间出现明显矛盾时给出提示（例如文字说“提升到 90%”，但目标值只有 0.1）。\n\n"
-        "请返回 JSON 数组，格式示例：\n"
+        "type 字段的值跟issue_type 相匹配。"
+        "问题类型枚举（issue_type）：请根据问题性质，从以下 5 类中选择一类作为 issue_type 字段的值：['completeness', 'compliance','measurability', 'relevance', 'mismatch']\n"
+        "- completeness：完整性缺失（信息不全、缺少指标维度或占位符未替换）；\n"
+        "- compliance：合规性问题（数学/时间逻辑错误或违反硬性规定，如资金不平衡、时间先后错误等）；\n"
+        "- measurability：可衡量性不足（描述模糊、缺乏量化标准或计量单位）；\n"
+        "- relevance：相关性缺失（指标内容与绩效目标脱节，无法支撑目标实现）；\n"
+        "- mismatch：投入产出不匹配（资金投入、项目属性与指标设置不匹配）。\n\n"
+        "请返回 JSON 数组，格式示例\n"
         "[\n"
-        "  {\"type\": \"一致性风险\", \"severity\": \"中\", \"location\": \"产出指标\","
-        "   \"message\": \"目标提及'设备采购'，但未发现相关数量指标\", \"suggestion\": \"建议增加数量指标\"}\n"
+        "  {\n"
+        "    \"type\": \"相关性缺失\",\n"
+        "    \"issue_type\": \"relevance\",\n"
+        "    \"severity\": \"中\",\n"
+        "    \"location\": \"产出指标\",\n"
+        "    \"message\": \"目标提及'设备采购'，但未发现相关数量指标\",\n"
+        "    \"suggestion\": \"建议增加数量指标，如'设备采购数量'\"\n"
+        "  }\n"
         "]\n"
         "若无问题，返回 []。"
     )
@@ -99,4 +113,3 @@ def run_semantic_check(data: PerformanceDeclarationSchema) -> List[Dict[str, Any
             if key in result_data and isinstance(result_data[key], list):
                 return result_data[key]
     return []
-

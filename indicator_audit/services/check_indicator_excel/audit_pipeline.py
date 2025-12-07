@@ -29,7 +29,7 @@ def normalize_rigid_issue(issue: Dict) -> Dict:
         "INFO": "info",
     }
 
-    return {
+    normalized = {
         "source": "rules",  # 标识来源：规则引擎
         "source_label": "刚性规则",
         "severity": severity_map.get(issue["level"], "info"),
@@ -38,12 +38,16 @@ def normalize_rigid_issue(issue: Dict) -> Dict:
         "position": issue["loc"],
         "suggestion": "请根据规则修正Excel中的对应数据。",  # 刚性错误通常不需要复杂建议，改对为止
     }
+    # issue_type 为内部问题类别（completeness/compliance/...），供后续入库与统计使用
+    if "issue_type" in issue:
+        normalized["issue_type"] = issue["issue_type"]
+    return normalized
 
 
 def normalize_semantic_issue(issue: Dict) -> Dict:
     """
     将语义校验结果转换为标准格式
-    Input: {'type': '一致性风险', 'severity': '中', 'location': '...', 'message': '...', 'suggestion': '...'}
+    Input: {'type': '一致性风险', 'issue_type':'compliance', 'severity': '中', 'location': '...', 'message': '...', 'suggestion': '...'}
     """
     # 语义分析通常不应阻断流程，最高级别设为 warning
     severity_map = {
@@ -55,7 +59,7 @@ def normalize_semantic_issue(issue: Dict) -> Dict:
         "LOW": "info",
     }
 
-    return {
+    normalized = {
         "source": "ai",  # 标识来源：AI引擎
         "source_label": "智能审查",
         "severity": severity_map.get(issue.get("severity", "中"), "info"),
@@ -64,6 +68,9 @@ def normalize_semantic_issue(issue: Dict) -> Dict:
         "position": issue.get("location", "全局"),
         "suggestion": issue.get("suggestion", ""),
     }
+    if "issue_type" in issue:
+        normalized["issue_type"] = issue.get("issue_type")
+    return normalized
 
 
 def parse_excel_to_markdown(file_path: str) -> str:
@@ -216,4 +223,3 @@ def calculate_score(issues: List[Dict]) -> int:
         elif issue["severity"] == "info":
             score -= 1
     return max(score, 0)
-

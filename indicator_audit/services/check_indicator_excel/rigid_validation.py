@@ -6,6 +6,11 @@ from typing import List, Dict, Any
 from datetime import datetime
 
 from indicator_audit.schemas import PerformanceDeclarationSchema
+from indicator_audit.constants import (
+    ISSUE_TYPE_COMPLETENESS,
+    ISSUE_TYPE_COMPLIANCE,
+    ISSUE_TYPE_MISMATCH,
+)
 
 
 def parse_flexible_date(text: str | None) -> datetime | None:
@@ -66,14 +71,20 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
     """
     results: List[Dict[str, Any]] = []
 
-    def add_error(loc, msg):
-        results.append({"level": "ERROR", "loc": loc, "msg": msg})
+    def add_error(loc, msg, issue_type: str | None = None):
+        results.append(
+            {"level": "ERROR", "loc": loc, "msg": msg, "issue_type": issue_type}
+        )
 
-    def add_warning(loc, msg):
-        results.append({"level": "WARNING", "loc": loc, "msg": msg})
+    def add_warning(loc, msg, issue_type: str | None = None):
+        results.append(
+            {"level": "WARNING", "loc": loc, "msg": msg, "issue_type": issue_type}
+        )
 
-    def add_info(loc, msg):
-        results.append({"level": "INFO", "loc": loc, "msg": msg})
+    def add_info(loc, msg, issue_type: str | None = None):
+        results.append(
+            {"level": "INFO", "loc": loc, "msg": msg, "issue_type": issue_type}
+        )
 
     def _is_blank(value: Any) -> bool:
         """判断字段是否为空（None 或 空字符串）。"""
@@ -89,13 +100,17 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
     # =========================================
     project_info = data.project_info
     if _is_blank(getattr(project_info, "project_name", None)):
-        add_error("项目名称", "项目名称未填写。")
+        add_error("项目名称", "项目名称未填写。", ISSUE_TYPE_COMPLETENESS)
     if _is_blank(getattr(project_info, "department", None)):
-        add_error("主管预算部门", "主管预算部门未填写。")
+        add_error("主管预算部门", "主管预算部门未填写。", ISSUE_TYPE_COMPLETENESS)
     if _is_blank(getattr(project_info, "implementation_unit", None)):
-        add_info("项目实施单位", "项目实施单位未填写，仅作提醒。")
+        add_info(
+            "项目实施单位",
+            "项目实施单位未填写，仅作提醒。",
+            ISSUE_TYPE_COMPLETENESS,
+        )
     if _is_blank(getattr(project_info, "goal_description", None)):
-        add_error("绩效目标", "绩效目标描述未填写")
+        add_error("绩效目标", "绩效目标描述未填写", ISSUE_TYPE_COMPLETENESS)
 
     # =========================================
     # 1. 资金平衡性校验 (Critical Error)
@@ -111,6 +126,7 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
         add_error(
             "项目资金",
             f"资金总额({total})与分项之和({fiscal + other})不符，差额超过0.1万元。",
+            ISSUE_TYPE_COMPLIANCE,
         )
 
     # =========================================
@@ -139,7 +155,11 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
     required_levels = {"产出指标", "效益指标", "满意度指标"}
     missing = required_levels - level1_set
     if missing:
-        add_error("指标完整性", f"缺少以下维度的具体指标项：{', '.join(missing)}")
+        add_error(
+            "指标完整性",
+            f"缺少以下维度的具体指标项：{', '.join(missing)}",
+            ISSUE_TYPE_COMPLETENESS,
+        )
 
     # =========================================
     # 4. 时间逻辑校验 (Logic)
@@ -152,9 +172,17 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
     # 4.1 项目自身时间校验
     if p_start and p_end:
         if p_start > p_end:
-            add_error("项目起止时间", "项目结束时间早于开始时间。")
+            add_error(
+                "项目起止时间",
+                "项目结束时间早于开始时间。",
+                ISSUE_TYPE_COMPLIANCE,
+            )
     else:
-        add_warning("项目起止时间", "未检测到完整的项目起止时间，跳过部分时效校验。")
+        add_warning(
+            "项目起止时间",
+            "未检测到完整的项目起止时间，跳过部分时效校验。",
+            ISSUE_TYPE_COMPLETENESS,
+        )
 
     # 4.2 指标时间 vs 项目结束时间
     if p_end:
@@ -177,6 +205,7 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
                     add_error(
                         f"指标: {ind.level3}",
                         f"指标要求完成时间({ind_date.strftime('%Y-%m')})晚于项目结束时间({p_end.strftime('%Y-%m')})。",
+                        ISSUE_TYPE_COMPLIANCE,
                     )
 
     # =========================================
@@ -191,12 +220,18 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
         raw_str = ind.raw_text or ""
 
         if _is_blank(raw_str):
-            add_error(f"指标：{ind.level3}", "指标值未填写")
+            add_error(
+                f"指标：{ind.level3}",
+                "指标值未填写",
+                ISSUE_TYPE_COMPLETENESS,
+            )
 
         if (ind.target_value is None) or ("*" in val_str) or ("*" in raw_str):
             # 定性指标(如"有效提升")如果没有数值是允许的，但不能包含 *
             add_error(
-                f"指标: {ind.level3}", "检测到未确定的占位符(*)，请填写具体数值。"
+                f"指标: {ind.level3}",
+                "检测到未确定的占位符(*)，请填写具体数值。",
+                ISSUE_TYPE_COMPLETENESS,
             )
 
         # 5.2 符号方向 (成本不应设置下限)
@@ -204,6 +239,7 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
             add_warning(
                 f"指标: {ind.level3}",
                 "成本指标使用了“大于等于”符号，请确认预算是否无上限？",
+                ISSUE_TYPE_MISMATCH,
             )
 
         # 5.3 百分比数值异常
@@ -212,6 +248,7 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
                 add_warning(
                     f"指标: {ind.level3}",
                     f"百分比指标数值({ind.target_value}%)异常，通常不应超过100%。",
+                    ISSUE_TYPE_COMPLIANCE,
                 )
 
     # =========================================
@@ -219,7 +256,10 @@ def run_rigid_validation(data: PerformanceDeclarationSchema) -> List[Dict[str, A
     # =========================================
     attr = data.project_info.project_attribute
     if attr and attr not in ["经常性项目", "一次性项目"]:
-        add_warning("项目属性", f"项目属性 '{attr}' 不规范，建议检查。")
+        add_warning(
+            "项目属性",
+            f"项目属性 '{attr}' 不规范，建议检查。",
+            ISSUE_TYPE_COMPLIANCE,
+        )
 
     return results
-

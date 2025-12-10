@@ -1,0 +1,183 @@
+{% extends 'user/layout.html' %}
+
+{% block title %}我的审核记录{% endblock %}
+
+{% block content %}
+{% include 'indicator_audit/_audit_styles.html' %}
+
+<section class="audit-shell px-6 py-6 sm:px-8 sm:py-8">
+  <header class="audit-hero px-6 py-6 sm:px-8 sm:py-8">
+    <div class="space-y-3">
+      <p class="eyebrow">Audit History</p>
+      <h2 class="text-2xl font-semibold text-primary m-0">我的审核记录</h2>
+      <p class="mt-2 text-sm text-secondary">
+        查看自己上传的单个文件及批量审核任务历史，支持二次打开报告，无需重复上传 Excel。
+      </p>
+    </div>
+  </header>
+
+  <style>
+    .my-audit-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    .my-audit-table th,
+    .my-audit-table td {
+      vertical-align: top;
+      word-break: break-all;
+      white-space: normal;
+    }
+
+    .my-audit-table .cell-nowrap {
+      white-space: nowrap;
+      word-break: keep-all;
+    }
+
+    .my-audit-table .cell-critical {
+      color: var(--color-danger);
+      font-weight: 600;
+    }
+  </style>
+
+  <div class="mt-6 space-y-6">
+    <!-- 我的文件列表 -->
+    <article class="panel px-6 py-6 sm:px-8 sm:py-8">
+      <h3 class="text-lg font-semibold text-primary mb-3">我的文件</h3>
+      {% if file_page_obj.object_list %}
+      <div class="overflow-x-auto border rounded-lg bg-white">
+        <table class="min-w-full text-sm my-audit-table">
+          <colgroup>
+            <col style="width: 14%" />
+            <col style="width: 22%" />
+            <col style="width: 22%" />
+            <col style="width: 16%" />
+            <col style="width: 6%" />
+            <col style="width: 8%" />
+            <col style="width: 6%" />
+            <col style="width: 6%" />
+          </colgroup>
+          <thead class="bg-gray-50 text-xs text-secondary">
+            <tr>
+              <th class="px-3 py-2 text-left cell-nowrap">上传时间</th>
+              <th class="px-3 py-2 text-left">文件名</th>
+              <th class="px-3 py-2 text-left">项目名称</th>
+              <th class="px-3 py-2 text-left">主管部门</th>
+              <th class="px-3 py-2 text-left">红灯</th>
+              <th class="px-3 py-2 text-left">健康分</th>
+              <th class="px-3 py-2 text-left">状态</th>
+              <th class="px-3 py-2 text-left">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in file_page_obj.object_list %}
+            <tr class="border-t last:border-b">
+              <td class="px-3 py-2 cell-nowrap">{{ f.created_at|date:"Y-m-d H:i" }}</td>
+              <td class="px-3 py-2">{{ f.original_filename }}</td>
+              <td class="px-3 py-2">{{ f.project_name|default:"-" }}</td>
+              <td class="px-3 py-2">{{ f.department|default:"-" }}</td>
+              <td class="px-3 py-2">
+                {% if f.critical_count > 0 %}
+                  <span class="cell-critical">{{ f.critical_count }}</span>
+                {% else %}
+                  <span>{{ f.critical_count }}</span>
+                {% endif %}
+              </td>
+              <td class="px-3 py-2">{{ f.score|default:"-" }}</td>
+              <td class="px-3 py-2 cell-nowrap">
+                {% if f.status == 'completed' %}已完成{% elif f.status == 'processing' %}处理中{% elif f.status == 'failed' %}失败{% elif f.status == 'skipped' %}已跳过{% else %}排队中{% endif %}
+              </td>
+              <td class="px-3 py-2">
+                {% if f.report_json %}
+                <a
+                  href="{% url 'indicator_audit:audit_file_detail' f.id %}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline text-xs"
+                >
+                  查看结果
+                </a>
+                {% else %}
+                <span class="text-xs text-secondary">暂无报告</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex justify-between items-center text-xs text-secondary">
+        <span>共 {{ file_page_obj.paginator.count }} 条，当前第 {{ file_page_obj.number }}/{{ file_page_obj.paginator.num_pages }} 页</span>
+        <div class="space-x-2">
+          {% if file_page_obj.has_previous %}
+          <a href="?file_page={{ file_page_obj.previous_page_number }}&batch_page={{ batch_page_obj.number }}" class="hover:underline">上一页</a>
+          {% endif %}
+          {% if file_page_obj.has_next %}
+          <a href="?file_page={{ file_page_obj.next_page_number }}&batch_page={{ batch_page_obj.number }}" class="hover:underline">下一页</a>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <p class="text-sm text-secondary">暂无审核文件记录，可先在“绩效目标智能审核”页面上传 Excel。</p>
+      {% endif %}
+    </article>
+
+    <!-- 我的批量列表（占位） -->
+    <article class="panel px-6 py-6 sm:px-8 sm:py-8">
+      <h3 class="text-lg font-semibold text-primary mb-3">我的批次</h3>
+      {% if batch_page_obj.object_list %}
+      <div class="overflow-x-auto border rounded-lg bg-white">
+        <table class="min-w-full text-sm my-audit-table">
+          <thead class="bg-gray-50 text-xs text-secondary">
+            <tr>
+              <th class="px-3 py-2 text-left cell-nowrap">创建时间</th>
+              <th class="px-3 py-2 text-left">批次名称</th>
+              <th class="px-3 py-2 text-left">文件数</th>
+              <th class="px-3 py-2 text-left">状态</th>
+              <th class="px-3 py-2 text-left">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in batch_page_obj.object_list %}
+            <tr class="border-t last:border-b">
+              <td class="px-3 py-2 cell-nowrap">{{ b.created_at|date:"Y-m-d H:i" }}</td>
+              <td class="px-3 py-2">{{ b.batch_name }}</td>
+              <td class="px-3 py-2">{{ b.total_files }}</td>
+              <td class="px-3 py-2">
+                {% if b.status == 'completed' %}已完成{% elif b.status == 'processing' %}处理中{% elif b.status == 'failed' %}失败{% else %}排队中{% endif %}
+              </td>
+              <td class="px-3 py-2">
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                  <a
+                    href="{% url 'indicator_audit:audit_batch_detail' b.id %}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary hover:underline"
+                  >
+                    统计大屏
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex justify-between items-center text-xs text-secondary">
+        <span>共 {{ batch_page_obj.paginator.count }} 条，当前第 {{ batch_page_obj.number }}/{{ batch_page_obj.paginator.num_pages }} 页</span>
+        <div class="space-x-2">
+          {% if batch_page_obj.has_previous %}
+          <a href="?file_page={{ file_page_obj.number }}&batch_page={{ batch_page_obj.previous_page_number }}" class="hover:underline">上一页</a>
+          {% endif %}
+          {% if batch_page_obj.has_next %}
+          <a href="?file_page={{ file_page_obj.number }}&batch_page={{ batch_page_obj.next_page_number }}" class="hover:underline">下一页</a>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <p class="text-sm text-secondary">批量审核功能开发中，当前暂未生成任何批次记录。</p>
+      {% endif %}
+    </article>
+  </div>
+</section>
+{% endblock %}

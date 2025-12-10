@@ -11,6 +11,11 @@ urlpatterns = [
         name="audit_indicator_page",
     ),
     path(
+        "audit/batch/",
+        views.AuditBatchPage.as_view(),
+        name="audit_batch_page",
+    ),
+    path(
         "api/audit/upload/",
         views.audit_upload,
         name="audit_upload",
@@ -20,5 +25,49 @@ urlpatterns = [
         views.audit_status,
         name="audit_status",
     ),
+    path(
+        "api/batch/",
+        views.api_create_batch,
+        name="api_create_batch",
+    ),
+    path(
+        "api/batch/<int:batch_id>/upload/",
+        views.api_batch_upload,
+        name="api_batch_upload",
+    ),
+    path(
+        "api/batch/<int:batch_id>/progress/",
+        views.api_batch_progress,
+        name="api_batch_progress",
+    ),
+    path(
+        "api/batch/<int:batch_id>/summary/",
+        views.api_batch_summary,
+        name="api_batch_summary",
+    ),
+    path(
+        "my/files/",
+        views.MyAuditFileListPage.as_view(),
+        name="my_audit_files",
+    ),
+    path(
+        "file/<int:pk>/",
+        views.AuditFileDetailPage.as_view(),
+        name="audit_file_detail",
+    ),
+    path(
+        "file/<int:pk>/export/markdown/",
+        views.export_audit_file_markdown,
+        name="audit_file_export_markdown",
+    ),
+    path(
+        "file/<int:pk>/export/pdf/",
+        views.export_audit_file_pdf,
+        name="audit_file_export_pdf",
+    ),
+    path(
+        "batch/<int:pk>/",
+        views.AuditBatchDetailPage.as_view(),
+        name="audit_batch_detail",
+    ),
 ]
-

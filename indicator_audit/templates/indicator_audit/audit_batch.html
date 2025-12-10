@@ -1,0 +1,366 @@
+{% extends 'user/layout.html' %}
+
+{% block title %}批量审核（文件夹模式）{% endblock %}
+
+{% block content %}
+{% include 'indicator_audit/_audit_styles.html' %}
+
+<section class="audit-shell px-6 py-6 sm:px-8 sm:py-8">
+  <header class="audit-hero px-6 py-6 sm:px-8 sm:py-8">
+    <div class="space-y-3">
+      <p class="eyebrow">Batch Audit</p>
+      <h2 class="text-2xl font-semibold text-primary m-0">批量审核（按文件夹上传）</h2>
+      <p class="mt-2 text-sm text-secondary">
+        选择一个包含多个绩效目标 Excel 的文件夹，系统会自动为该批次创建任务，
+        并在右侧持续展示总文件数、已完成数量以及排队情况。
+      </p>
+    </div>
+  </header>
+
+  <div class="grid gap-6 lg:grid-cols-[1.1fr_minmax(0,0.9fr)] mt-6">
+    <!-- 左侧：批次创建 + 多文件上传 -->
+    <article class="panel px-6 py-6 sm:px-8 sm:py-8">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p class="text-xs uppercase tracking-[0.3em] text-secondary mb-1">Batch</p>
+          <h3 class="text-xl font-semibold text-primary m-0">创建批次并上传文件</h3>
+        </div>
+      </div>
+
+      <form id="batch-form" class="mt-5 space-y-4" autocomplete="off">
+        <div class="upload-dropzone">
+          <p class="text-sm font-semibold text-primary m-0">选择 Excel 文件或整个文件夹</p>
+          <p class="text-sm text-secondary m-0">
+            支持多选 .xlsx 文件；在部分浏览器中可选择整个目录（会自动展开为多个文件）。
+          </p>
+          <input
+            id="batch-files"
+            name="files"
+            type="file"
+            class="file-input-hidden"
+            multiple
+            webkitdirectory
+            accept=".xlsx"
+          />
+          <div class="flex flex-wrap items-center gap-3 mt-2">
+            <label for="batch-files" class="file-trigger">选择文件/文件夹</label>
+            <span id="batch-files-summary" class="file-name">尚未选择文件</span>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <button id="batch-submit-btn" type="submit" class="btn-primary">
+            <span class="btn-spinner is-hidden" aria-hidden="true"></span>
+            <span class="btn-label">开始批量审核</span>
+          </button>
+          <p class="text-xs text-secondary m-0">
+            审核任务在后台运行，右侧实时展示批次进度。可在“我的审核记录 &gt; 我的批次”中查看历史记录。
+          </p>
+        </div>
+      </form>
+    </article>
+
+    <!-- 右侧：批次执行进度 -->
+    <article class="panel live-panel px-6 py-6 sm:px-8 sm:py-8">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-xs uppercase tracking-[0.3em] text-secondary mb-1">Progress</p>
+          <h3 class="text-xl font-semibold text-primary m-0">批次进度</h3>
+        </div>
+        <span id="batch-status-pill" class="status-pill" data-state="pending">未开始</span>
+      </div>
+      <p id="batch-tip" class="mt-3 text-sm text-secondary">
+        尚未创建批次。选择包含多个 Excel 的目录后开始批量审核。
+      </p>
+
+      <div class="mt-5 space-y-4">
+        <div>
+          <div class="flex justify-between items-center text-xs text-secondary mb-1">
+            <span>整体进度</span>
+            <span id="batch-progress-text">0 / 0</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+            <div
+              id="batch-progress-bar"
+              class="h-2 rounded-full bg-primary"
+              style="width: 0%; transition: width 0.2s ease;"
+            ></div>
+          </div>
+        </div>
+
+        <div class="status-grid">
+          <div class="status-counter">
+            <h5>总文件数</h5>
+            <p>当前批次包含的文件数量</p>
+            <strong id="batch-total">0</strong>
+          </div>
+          <div class="status-counter status-critical">
+            <h5>已完成</h5>
+            <p>审核已结束的文件数量</p>
+            <strong id="batch-completed">0</strong>
+          </div>
+          <div class="status-counter status-warning">
+            <h5>排队中</h5>
+            <p>尚未完成的文件数量</p>
+            <strong id="batch-queued">0</strong>
+          </div>
+          <div class="status-counter status-info">
+            <h5>失败数</h5>
+            <p>审核失败的文件数量</p>
+            <strong id="batch-failed">0</strong>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<script>
+  (function () {
+    const endpoints = {
+      createBatch: '/indicator_audit/api/batch/',
+      upload(batchId) {
+        return `/indicator_audit/api/batch/${batchId}/upload/`;
+      },
+      progress(batchId) {
+        return `/indicator_audit/api/batch/${batchId}/progress/`;
+      },
+    };
+
+    const form = document.getElementById('batch-form');
+    if (!form) return;
+
+    const fileInput = document.getElementById('batch-files');
+    const filesSummary = document.getElementById('batch-files-summary');
+    const submitBtn = document.getElementById('batch-submit-btn');
+    const btnSpinner = submitBtn.querySelector('.btn-spinner');
+    const btnLabel = submitBtn.querySelector('.btn-label');
+
+    const statusPill = document.getElementById('batch-status-pill');
+    const tip = document.getElementById('batch-tip');
+    const progressBar = document.getElementById('batch-progress-bar');
+    const progressText = document.getElementById('batch-progress-text');
+    const totalEl = document.getElementById('batch-total');
+    const completedEl = document.getElementById('batch-completed');
+    const queuedEl = document.getElementById('batch-queued');
+    const failedEl = document.getElementById('batch-failed');
+
+    const STORAGE_KEY = 'indicator_audit_active_batch_id';
+    let activeBatchId = null;
+    let pollTimer = null;
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/csrftoken=([^;]+)/);
+      return match ? match[1] : '';
+    }
+
+    function setLoading(isLoading) {
+      submitBtn.disabled = isLoading;
+      btnSpinner.classList.toggle('is-hidden', !isLoading);
+      btnLabel.textContent = isLoading ? '批量审核中…' : '开始批量审核';
+    }
+
+    function setStatusBadge(status) {
+      statusPill.dataset.state = status || 'pending';
+      let label = '未开始';
+      if (status === 'processing') label = '执行中';
+      else if (status === 'completed') label = '已完成';
+      else if (status === 'failed') label = '部分失败';
+      statusPill.textContent = label;
+    }
+
+    function updateProgressView(data) {
+      const total = data.total_files || 0;
+      const completed = data.completed_files || 0;
+      const failed = data.failed_files || 0;
+      const queued = data.queued_files || Math.max(total - completed - failed, 0);
+
+      totalEl.textContent = total;
+      completedEl.textContent = completed;
+      queuedEl.textContent = queued;
+      failedEl.textContent = failed;
+
+      progressText.textContent = `${completed + failed} / ${total}`;
+      const ratio = total > 0 ? ((completed + failed) / total) * 100 : 0;
+      progressBar.style.width = `${Math.min(Math.max(ratio, 0), 100)}%`;
+
+      setStatusBadge(data.status);
+
+      if (!total) {
+        tip.textContent = '批次已创建，等待文件上传或任务启动。';
+      } else if (data.status === 'processing') {
+        tip.textContent = `批次正在执行中，已完成 ${completed + failed} 个，剩余 ${queued} 个待处理…`;
+      } else if (data.status === 'completed' && failed === 0) {
+        tip.textContent = '批次审核已全部完成，可在“我的审核记录 > 我的批次”中查看详细报告。';
+      } else if (data.status === 'failed' || failed > 0) {
+        tip.textContent = '批次中存在审核失败的文件，请在“我的审核记录 > 我的批次”中查看详情并重试。';
+      }
+    }
+
+    async function pollProgressOnce(batchId) {
+      try {
+        const resp = await fetch(endpoints.progress(batchId));
+        if (!resp.ok) {
+          throw new Error(await resp.text());
+        }
+        const data = await resp.json();
+        updateProgressView(data);
+
+        if (['completed', 'failed'].includes(data.status)) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          setLoading(false);
+          // 批次已结束，清除本地缓存的活动批次 ID，避免刷新后仍自动恢复进度
+          activeBatchId = null;
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch (error) {
+        console.error('获取批次进度失败', error);
+        clearInterval(pollTimer);
+        pollTimer = null;
+        setLoading(false);
+        tip.textContent = '批次进度查询失败，请稍后在“我的批次”中查看结果。';
+        setStatusBadge('failed');
+      }
+    }
+
+    function startPolling(batchId) {
+      if (pollTimer) clearInterval(pollTimer);
+      pollProgressOnce(batchId);
+      pollTimer = setInterval(() => pollProgressOnce(batchId), 2000);
+    }
+
+    async function handleSubmit(event) {
+      event.preventDefault();
+      const files = Array.from(fileInput.files || []);
+
+      if (!files.length) {
+        alert('请先选择至少一个 .xlsx 文件。');
+        return;
+      }
+
+      const invalid = files.find((f) => !f.name.toLowerCase().endsWith('.xlsx'));
+      if (invalid) {
+        alert('存在非 .xlsx 文件，请重新选择。');
+        return;
+      }
+
+      setLoading(true);
+      tip.textContent = '正在创建批次并上传文件，请稍候…';
+      setStatusBadge('processing');
+
+      try {
+        // 从文件列表推断批次名称：优先使用目录名
+        const first = files[0];
+        let derivedName = '';
+        if (first.webkitRelativePath) {
+          const parts = first.webkitRelativePath.split('/');
+          derivedName = (parts[0] || '').trim();
+        }
+        if (!derivedName) {
+          derivedName = first.name.replace(/\.xlsx$/i, '').trim();
+        }
+        const batchName = derivedName || '未命名批次';
+
+        // 1) 创建批次
+        const createResp = await fetch(endpoints.createBatch, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken(),
+          },
+          body: JSON.stringify({
+            batch_name: batchName,
+            description: null,
+          }),
+        });
+        const createData = await createResp.json();
+        if (!createResp.ok) {
+          throw new Error(createData.error || '批次创建失败');
+        }
+        const batchId = createData.id;
+        activeBatchId = batchId;
+        localStorage.setItem(STORAGE_KEY, String(batchId));
+
+        // 2) 上传文件列表
+        const formData = new FormData();
+        files.forEach((file) => formData.append('files', file));
+
+        const uploadResp = await fetch(endpoints.upload(batchId), {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCsrfToken() },
+          body: formData,
+        });
+        const uploadData = await uploadResp.json();
+        if (!uploadResp.ok) {
+          throw new Error(uploadData.error || '批次文件上传失败');
+        }
+
+        tip.textContent = '批次已创建并开始审核，右侧为当前进度。';
+
+        // 上传成功后，清空当前选择的文件，避免用户误以为仍在本轮上传中
+        fileInput.value = '';
+        filesSummary.textContent = '尚未选择文件';
+
+        updateProgressView({
+          status: 'processing',
+          total_files: (uploadData.files && uploadData.files.length) || 0,
+          completed_files: 0,
+          failed_files: 0,
+          queued_files: (uploadData.files && uploadData.files.length) || 0,
+        });
+        startPolling(batchId);
+      } catch (error) {
+        console.error(error);
+        alert(error.message || '批次创建或上传失败，请稍后重试。');
+        setLoading(false);
+        tip.textContent = '批次创建失败，请检查网络或稍后重试。';
+        setStatusBadge('failed');
+      }
+    }
+
+    form.addEventListener('submit', handleSubmit);
+
+    fileInput.addEventListener('change', () => {
+      const files = Array.from(fileInput.files || []);
+      if (!files.length) {
+        filesSummary.textContent = '尚未选择文件';
+        return;
+      }
+      const count = files.length;
+      const example = files[0].webkitRelativePath || files[0].name;
+      filesSummary.textContent = `已选择 ${count} 个文件，例如：${example}`;
+    });
+
+    // 页面加载时尝试恢复上一次未完成的批次进度
+    const savedBatchId = localStorage.getItem(STORAGE_KEY);
+    if (savedBatchId) {
+      const parsed = parseInt(savedBatchId, 10);
+      if (!Number.isNaN(parsed)) {
+        (async () => {
+          try {
+            const resp = await fetch(endpoints.progress(parsed));
+            if (!resp.ok) throw new Error();
+            const data = await resp.json();
+            // 若批次已完成或失败，则认为没有活动批次，仅清除本地记录，不恢复进度
+            if (['completed', 'failed'].includes(data.status)) {
+              localStorage.removeItem(STORAGE_KEY);
+              return;
+            }
+            // 仅当批次仍在执行时才恢复进度
+            activeBatchId = parsed;
+            setLoading(true);
+            tip.textContent = '检测到未完成的批次，正在恢复进度…';
+            setStatusBadge('processing');
+            updateProgressView(data);
+            startPolling(parsed);
+          } catch (e) {
+            // 如查询失败，清理本地记录，保持初始状态
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        })();
+      }
+    }
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ batch.batch_name }} - 批次统计大屏</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+      :root {
+        --primary-color: #1890ff;
+        --bg-color: #f0f2f5;
+        --card-bg: #ffffff;
+        --text-color: #333;
+        --header-height: 70px;
+        --kpi-height: 110px;
+        --gap: 15px;
+      }
+
+      body {
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        background-color: var(--bg-color);
+        margin: 0;
+        padding: var(--gap);
+        color: var(--text-color);
+        height: 100vh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .header {
+        background: var(--card-bg);
+        padding: 0 20px;
+        height: var(--header-height);
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+        margin-bottom: var(--gap);
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+        color: #002766;
+      }
+
+      .header .sub-text {
+        color: #666;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      .kpi-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--gap);
+        height: var(--kpi-height);
+        flex-shrink: 0;
+        margin-bottom: var(--gap);
+      }
+
+      .kpi-card {
+        background: var(--card-bg);
+        padding: 15px;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .kpi-title {
+        color: #8c8c8c;
+        font-size: 13px;
+        margin-bottom: 5px;
+      }
+
+      .kpi-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #002766;
+        line-height: 1;
+      }
+
+      .kpi-value.red {
+        color: #cf1322;
+      }
+
+      .kpi-value.green {
+        color: #3f8600;
+      }
+
+      .charts-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 40% 60%;
+        grid-template-rows: 50% 50%;
+        gap: var(--gap);
+        min-height: 0;
+      }
+
+      .chart-card {
+        background: var(--card-bg);
+        padding: 15px;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      .area-scatter {
+        grid-column: 2 / 3;
+        grid-row: 1 / 3;
+      }
+
+      .area-pareto {
+        grid-column: 1 / 2;
+        grid-row: 1 / 2;
+      }
+
+      .area-ranking {
+        grid-column: 1 / 2;
+        grid-row: 2 / 3;
+      }
+
+      .chart-title {
+        font-size: 15px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        border-left: 4px solid var(--primary-color);
+        padding-left: 10px;
+        flex-shrink: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+
+      .chart-desc {
+        font-size: 11px;
+        color: #999;
+        font-weight: normal;
+      }
+
+      .chart-body {
+        flex: 1;
+        width: 100%;
+        min-height: 0;
+      }
+
+      @media (max-width: 1024px) {
+        body {
+          overflow: auto;
+          height: auto;
+        }
+
+        .kpi-container {
+          grid-template-columns: repeat(2, 1fr);
+          height: auto;
+        }
+
+        .charts-grid {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto auto;
+        }
+
+        .area-scatter,
+        .area-pareto,
+        .area-ranking {
+          grid-column: auto;
+          grid-row: auto;
+          min-height: 260px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <h1>{{ batch.batch_name }}</h1>
+        <div class="sub-text">
+          批次创建时间：{{ batch.created_at|date:"Y-m-d H:i" }} ｜
+          文件数：{{ batch.files.count }} ｜
+          状态：
+          {% if batch.status == 'completed' %}已完成{% elif batch.status == 'processing' %}处理中{% elif batch.status == 'failed' %}存在失败{% else %}排队中{% endif %}
+        </div>
+      </div>
+      <div>
+        <span
+          style="
+            background: #e6f7ff;
+            color: #1890ff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+          "
+        >
+          批次统计大屏
+        </span>
+      </div>
+    </div>
+
+    <div class="kpi-container">
+      <div class="kpi-card">
+        <div class="kpi-title">项目总体平均分 (PQI)</div>
+        <div class="kpi-value" id="kpi-avg-score">-</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">优质达标率 (≥80分 且无红灯)</div>
+        <div class="kpi-value green" id="kpi-pass-rate">-</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">不合格项目数 (&lt;60分 或有红灯)</div>
+        <div class="kpi-value red" id="kpi-fail-count">-</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">需整改项目数 (60-80分)</div>
+        <div class="kpi-value" style="color:#faad14" id="kpi-warning-count">-</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card area-pareto">
+        <div class="chart-title">
+          共性问题分布
+          <span class="chart-desc">审核不通过的主要原因分析</span>
+        </div>
+        <div id="chart-pareto" class="chart-body"></div>
+      </div>
+
+      <div class="chart-card area-ranking">
+        <div class="chart-title">
+          部门编制质量红黑榜
+          <span class="chart-desc">PQI 指数倒数排名预警</span>
+        </div>
+        <div id="chart-ranking" class="chart-body"></div>
+      </div>
+
+      <div class="chart-card area-scatter">
+        <div class="chart-title">
+          资金-质量四象限监管图谱
+          <span class="chart-desc" style="color:#cf1322; font-weight:bold;">
+            重点监管：(高投入低质量)区域
+          </span>
+        </div>
+        <div id="chart-scatter" class="chart-body"></div>
+      </div>
+    </div>
+
+    <script>
+  (function () {
+    const summary = {{ batch_summary_json|safe }};
+
+    // ---------- 填充 KPI ----------
+    (function fillKpis() {
+      if (!summary || !summary.kpi_summary) return;
+      const kpi = summary.kpi_summary;
+      const avgScoreEl = document.getElementById('kpi-avg-score');
+      const passRateEl = document.getElementById('kpi-pass-rate');
+      const failCountEl = document.getElementById('kpi-fail-count');
+      const warningCountEl = document.getElementById('kpi-warning-count');
+
+      avgScoreEl.textContent = kpi.avg_score != null ? kpi.avg_score : '-';
+      passRateEl.textContent = kpi.pass_rate != null ? kpi.pass_rate.toFixed(1) + '%' : '-';
+      failCountEl.textContent = kpi.fail_count != null ? kpi.fail_count : '-';
+      warningCountEl.textContent = kpi.warning_count != null ? kpi.warning_count : '-';
+    })();
+
+    if (typeof echarts === 'undefined') {
+      console.warn('ECharts 加载失败，无法渲染批次大屏图表。');
+      return;
+    }
+
+    // ---------- 共性问题分布（帕累托） ----------
+    (function renderPareto() {
+      const dom = document.getElementById('chart-pareto');
+      if (!dom) return;
+      const chart = echarts.init(dom);
+
+      const items = (summary.issues_by_type || []).slice();
+      if (!items.length) {
+        chart.setOption({
+          title: { text: '暂无问题数据', left: 'center', top: 'middle', textStyle: { color: '#999', fontSize: 14 } },
+        });
+        return;
+      }
+
+      const categories = items.map((x) => x.label);
+      const barData = items.map((x) => x.total);
+      const total = barData.reduce((sum, v) => sum + v, 0) || 1;
+      // 每一类问题在全部问题中的占比（而不是累计占比）
+      const lineData = barData.map((v) => ((v / total) * 100).toFixed(1));
+
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: 40, right: 40, top: 30, bottom: 40 },
+        xAxis: [
+          {
+            type: 'category',
+            data: categories,
+            axisLabel: { interval: 0, rotate: 20 },
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+            name: '问题数量',
+          },
+          {
+            type: 'value',
+            name: '占比 (%)',
+            max: 100,
+          },
+        ],
+        series: [
+          {
+            name: '问题数量',
+            type: 'bar',
+            data: barData,
+            itemStyle: { color: '#1890ff' },
+          },
+          {
+            name: '占比',
+            type: 'line',
+            yAxisIndex: 1,
+            data: lineData,
+            itemStyle: { color: '#faad14' },
+            smooth: true,
+          },
+        ],
+      });
+    })();
+
+    // ---------- 部门排名 ----------
+    (function renderRanking() {
+      const dom = document.getElementById('chart-ranking');
+      if (!dom) return;
+      const chart = echarts.init(dom);
+
+      const items = (summary.department_ranking || []).slice();
+      if (!items.length) {
+        chart.setOption({
+          title: { text: '暂无部门数据', left: 'center', top: 'middle', textStyle: { color: '#999', fontSize: 14 } },
+        });
+        return;
+      }
+
+      const departments = items.map((x) => x.department);
+      const scores = items.map((x) => x.avg_score);
+      const criticals = items.map((x) => x.critical_total);
+
+      chart.setOption({
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+        },
+        grid: { left: 80, right: 40, top: 20, bottom: 20 },
+        xAxis: {
+          type: 'value',
+          name: '平均分',
+        },
+        yAxis: {
+          type: 'category',
+          data: departments,
+          axisLabel: { formatter: (value) => (value && value.length > 8 ? value.slice(0, 8) + '…' : value) },
+        },
+        series: [
+          {
+            name: '平均分',
+            type: 'bar',
+            data: scores,
+            itemStyle: { color: '#40a9ff' },
+            label: { show: true, position: 'right', formatter: '{c}' },
+          },
+          {
+            name: '红灯数',
+            type: 'scatter',
+            xAxisIndex: 0,
+            yAxisIndex: 0,
+            data: criticals,
+            symbolSize: (val) => 6 + (val || 0) * 2,
+            itemStyle: { color: '#cf1322' },
+          },
+        ],
+      });
+    })();
+
+    // ---------- 资金-质量四象限 ----------
+    (function renderScatter() {
+      const dom = document.getElementById('chart-scatter');
+      if (!dom) return;
+      const chart = echarts.init(dom);
+
+      const points = (summary.scatter_points || []).slice();
+      if (!points.length) {
+        chart.setOption({
+          title: { text: '暂无资金与评分数据', left: 'center', top: 'middle', textStyle: { color: '#999', fontSize: 14 } },
+        });
+        return;
+      }
+
+      const data = points.map((p) => [
+        p.amount || 0,
+        p.score || 0,
+        p.department || '',
+        p.project_name || '',
+      ]);
+
+      const amountValues = data.map((d) => d[0] || 0);
+      const maxAmount = amountValues.length ? Math.max.apply(null, amountValues) : 0;
+      const axisMax = maxAmount ? Math.ceil((maxAmount * 1.1) / 200) * 200 : 1000;
+
+      const gridConfig = {
+        left: '10%',
+        right: '6%',
+        top: '8%',
+        bottom: '12%',
+        containLabel: true,
+      };
+
+      chart.setOption({
+        tooltip: {
+          trigger: 'item',
+          formatter: (params) => {
+            const [amount, score, dept, name] = params.data;
+            return [
+              `<strong>${name}</strong>`,
+              dept ? `部门：${dept}` : '',
+              `金额：${amount.toFixed ? amount.toFixed(2) : amount} 万元`,
+              `评分：${score}`,
+            ]
+              .filter(Boolean)
+              .join('<br/>');
+          },
+        },
+        grid: gridConfig,
+        xAxis: {
+          type: 'value',
+          name: '资金规模 (万元)',
+          axisLabel: { formatter: '{value}' },
+          min: 0,
+          max: axisMax,
+        },
+        yAxis: {
+          type: 'value',
+          name: '健康分',
+          min: 0,
+          max: 100,
+        },
+        series: [
+          {
+            type: 'scatter',
+            data,
+            symbolSize: (val) => {
+              const amount = val[0] || 0;
+              return 6 + Math.min(amount / 5000, 10);
+            },
+            itemStyle: {
+              color: (params) => {
+                const score = params.data && params.data[1] ? params.data[1] : 0;
+                if (score < 60) return '#cf1322'; // 红色：不合格
+                if (score < 80) return '#faad14'; // 黄色：需整改
+                return '#3f8600'; // 绿色：优质达标
+              },
+            },
+            // 背景风险渐变：左上风险低，右下风险高
+            markArea: maxAmount
+              ? {
+                  silent: true,
+                  itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
+                      { offset: 0, color: 'rgba(240, 255, 240, 0.0)' }, // 左上：安全区，几乎透明
+                      { offset: 0.5, color: 'rgba(255, 247, 173, 0.18)' }, // 中部：关注区
+                      { offset: 1, color: 'rgba(255, 77, 79, 0.25)' }, // 右下：高风险区
+                    ]),
+                  },
+                  data: [
+                    [
+                      // 只强调 0-80 分区间的风险带，并覆盖到坐标轴最右端
+                      { xAxis: 0, yAxis: 80 },
+                      { xAxis: axisMax, yAxis: 0 },
+                    ],
+                  ],
+                }
+              : undefined,
+            // 右下角风险提示文案
+            markPoint: {
+              symbol: 'circle',
+              symbolSize: 1,
+              itemStyle: { color: 'rgba(0,0,0,0)' },
+              label: {
+                show: true,
+                formatter: '重点监控区域（金额大，质量差）',
+                color: '#cf1322',
+                fontSize: 12,
+                align: 'right',
+                verticalAlign: 'bottom',
+                padding: [0, 4, 2, 0],
+              },
+              data: [
+                {
+                  coord: [axisMax, 5],
+                },
+              ],
+            },
+            markLine: {
+              symbol: 'none',
+              label: {
+                formatter: '{b}',
+              },
+              data: [
+                {
+                  name: '60分',
+                  yAxis: 60,
+                  lineStyle: { color: '#cf1322', type: 'dashed' },
+                },
+                {
+                  name: '80分',
+                  yAxis: 80,
+                  lineStyle: { color: '#3f8600', type: 'dashed' },
+                },
+              ],
+            },
+          },
+        ],
+      });
+    })();
+  })();
+    </script>
+  </body>
+</html>

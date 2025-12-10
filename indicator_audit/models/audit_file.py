@@ -1,9 +1,19 @@
+from django.conf import settings
 from django.db import models
 
 
 class AuditFile(models.Model):
     """单个 Excel 文件的审核记录，无论是否隶属于某个批次。"""
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="创建人",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="audit_files",
+        help_text="发起本次审核的用户。",
+    )
     batch = models.ForeignKey(
         "indicator_audit.AuditBatch",
         verbose_name="所属批次",
@@ -145,4 +155,3 @@ class AuditFile(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - 调试友好的展示
         return self.original_filename
-

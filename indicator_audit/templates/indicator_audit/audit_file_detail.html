@@ -1,0 +1,48 @@
+{% extends 'user/layout.html' %}
+
+{% block title %}审核报告详情{% endblock %}
+
+{% block content %}
+{% include 'indicator_audit/_audit_styles.html' %}
+
+<section class="audit-shell px-6 py-6 sm:px-8 sm:py-8">
+  <header class="audit-hero px-6 py-6 sm:px-8 sm:py-8 mb-6">
+    <div class="space-y-3">
+      <p class="eyebrow">Audit History</p>
+      <h2 class="text-2xl font-semibold text-primary m-0">审核报告详情</h2>
+      <p class="mt-1 text-sm text-secondary">
+        文件：{{ audit_file.original_filename }}；
+        项目：{{ audit_file.project_name|default:"未命名项目" }}；
+        上传时间：{{ audit_file.created_at|date:"Y-m-d H:i" }}。
+      </p>
+      <div class="flex flex-wrap gap-2 mt-2 text-xs">
+        <a
+          href="{% url 'indicator_audit:audit_file_export_markdown' audit_file.id %}"
+          class="inline-flex items-center px-3 py-1 rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+        >
+          导出 Markdown
+        </a>
+        <a
+          href="{% url 'indicator_audit:audit_file_export_pdf' audit_file.id %}"
+          class="inline-flex items-center px-3 py-1 rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+        >
+          导出 PDF
+        </a>
+      </div>
+    </div>
+  </header>
+
+  {% include 'indicator_audit/_audit_report_panel.html' %}
+</section>
+
+<script>
+  (function () {
+    const data = {{ report_json_str|safe }};
+    const reportPanel = document.getElementById('report-panel');
+    if (reportPanel && window.renderAuditReport && data) {
+      reportPanel.classList.remove('hidden');
+      window.renderAuditReport(data);
+    }
+  })();
+</script>
+{% endblock %}

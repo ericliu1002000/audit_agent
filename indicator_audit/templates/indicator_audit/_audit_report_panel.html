@@ -1,0 +1,150 @@
+  <article id="report-panel" class="panel report-panel px-6 py-6 sm:px-8 sm:py-8 hidden">
+    <div class="summary-top">
+      <div>
+        <p class="text-xs uppercase tracking-[0.3em] text-secondary mb-2">Report</p>
+        <h3 id="summary-project" class="text-2xl font-semibold text-primary m-0">-</h3>
+        <p class="mt-2 text-sm text-secondary">
+          以下报告汇总了刚性规则与智能语义复核的结论，可直接用于与业务侧沟通。
+        </p>
+      </div>
+      <div class="space-y-3 text-right">
+        <span id="summary-badge" class="summary-badge" data-state="warning">待开始</span>
+        <div class="score-card">
+          <span class="text-xs text-secondary">健康指数</span>
+          <strong id="score-value">-</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-grid mt-6">
+      <div class="status-counter status-critical">
+        <h5>红灯</h5>
+        <p>禁止提交</p>
+        <strong id="count-critical">0</strong>
+      </div>
+      <div class="status-counter status-warning">
+        <h5>黄灯</h5>
+        <p>需人工复核</p>
+        <strong id="count-warning">0</strong>
+      </div>
+      <div class="status-counter status-info">
+        <h5>蓝灯</h5>
+        <p>优化建议</p>
+        <strong id="count-info">0</strong>
+      </div>
+    </div>
+
+    <div class="issue-board mt-6">
+      <section id="critical-panel" class="issue-column">
+        <div>
+          <h4>红灯问题</h4>
+          <p>必须立即整改，否则不可提交。</p>
+        </div>
+        <div id="critical-list" class="issue-list"></div>
+      </section>
+
+      <section id="warning-panel" class="issue-column">
+        <div>
+          <h4>黄灯问题</h4>
+          <p>建议与业务负责人复核，确认风险后提交。</p>
+        </div>
+        <div id="warning-list" class="issue-list"></div>
+      </section>
+
+      <section id="info-panel" class="issue-column">
+        <div>
+          <h4>蓝灯提示</h4>
+          <p>为优化建议，可结合实际情况选择采纳。</p>
+        </div>
+        <div id="info-list" class="issue-list"></div>
+      </section>
+    </div>
+  </article>
+
+  <script>
+    (function () {
+      const summaryProject = document.getElementById('summary-project');
+      const summaryBadge = document.getElementById('summary-badge');
+      const scoreValue = document.getElementById('score-value');
+
+      const severityCounters = {
+        critical: document.getElementById('count-critical'),
+        warning: document.getElementById('count-warning'),
+        info: document.getElementById('count-info'),
+      };
+
+      const issueGroups = {
+        critical: {
+          list: document.getElementById('critical-list'),
+          emptyText: '暂未发现红灯问题。',
+        },
+        warning: {
+          list: document.getElementById('warning-list'),
+          emptyText: '暂无需要复核的黄灯问题。',
+        },
+        info: {
+          list: document.getElementById('info-list'),
+          emptyText: '暂无蓝灯提示，数据结构完整。',
+        },
+      };
+
+      function renderIssueGroup(severity, items) {
+        const group = issueGroups[severity];
+        if (!group) return;
+        group.list.innerHTML = '';
+        if (!items.length) {
+          const empty = document.createElement('p');
+          empty.className = 'text-sm text-secondary';
+          empty.textContent = group.emptyText;
+          group.list.appendChild(empty);
+          return;
+        }
+        items.forEach((issue, index) => {
+          const card = document.createElement('article');
+          card.className = 'issue-card';
+          const source = issue.source_label || (issue.source === 'ai' ? '智能审查' : '系统');
+          card.innerHTML =
+            `<div class="issue-card-head"><span>#${index + 1}</span><span>${source}</span></div>` +
+            `<div class="issue-title">${issue.title || '问题'}</div>` +
+            `<div class="issue-meta">定位：${issue.position || '未标明'}</div>` +
+            `<p class="issue-description">${issue.description || ''}</p>` +
+            (issue.suggestion ? `<p class="issue-suggestion">建议：${issue.suggestion}</p>` : '');
+          group.list.appendChild(card);
+        });
+      }
+
+      function setSummaryState(state) {
+        summaryBadge.dataset.state = state;
+        if (state === 'success') summaryBadge.textContent = '审核通过，可提交';
+        else if (state === 'warning') summaryBadge.textContent = '存在提示，建议复核';
+        else summaryBadge.textContent = '存在红灯，请整改';
+      }
+
+      window.renderAuditReport = function renderAuditReport(result) {
+        if (!result) return;
+
+        summaryProject.textContent = result.project_name || '未命名项目';
+        scoreValue.textContent = result.score ?? '-';
+
+        const issues = result.issues || [];
+        const groups = {
+          critical: issues.filter((item) => item.severity === 'critical'),
+          warning: issues.filter((item) => item.severity === 'warning'),
+          info: issues.filter((item) => item.severity !== 'critical' && item.severity !== 'warning'),
+        };
+
+        severityCounters.critical.textContent = groups.critical.length;
+        severityCounters.warning.textContent = groups.warning.length;
+        severityCounters.info.textContent = groups.info.length;
+
+        if (groups.critical.length) setSummaryState('danger');
+        else if (groups.warning.length) setSummaryState('warning');
+        else setSummaryState('success');
+
+        renderIssueGroup('critical', groups.critical);
+        renderIssueGroup('warning', groups.warning);
+        renderIssueGroup('info', groups.info);
+      };
+    })();
+  </script>
+

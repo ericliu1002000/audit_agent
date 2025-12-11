@@ -28,6 +28,11 @@ class AuditIndicatorPage(LoginRequiredMixin, TemplateView):
 
     template_name = "indicator_audit/audit_indicator_table.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "single"
+        return context
+
 
 class AuditBatchPage(LoginRequiredMixin, TemplateView):
     """
@@ -42,6 +47,11 @@ class AuditBatchPage(LoginRequiredMixin, TemplateView):
     """
 
     template_name = "indicator_audit/audit_batch.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "batch"
+        return context
 
 
 class MyAuditFileListPage(LoginRequiredMixin, TemplateView):
@@ -61,6 +71,7 @@ class MyAuditFileListPage(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["active_tab"] = "history"
 
         file_qs = AuditFile.objects.filter(created_by=self.request.user).order_by(
             "-created_at"
@@ -132,4 +143,3 @@ class AuditBatchDetailPage(LoginRequiredMixin, TemplateView):
         summary = build_batch_summary(batch)
         context["batch_summary_json"] = json.dumps(summary, ensure_ascii=False)
         return context
-

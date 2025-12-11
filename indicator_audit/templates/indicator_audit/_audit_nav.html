@@ -1,0 +1,24 @@
+<nav class="audit-nav" aria-label="审核导航">
+  <a
+    href="{% url 'indicator_audit:audit_indicator_page' %}"
+    class="audit-nav-item{% if active_tab == 'single' %} is-active{% endif %}"
+  >
+    <span class="audit-nav-label">单文件审核</span>
+    <span class="audit-nav-desc">上传单个 Excel 并查看智能报告</span>
+  </a>
+  <a
+    href="{% url 'indicator_audit:audit_batch_page' %}"
+    class="audit-nav-item{% if active_tab == 'batch' %} is-active{% endif %}"
+  >
+    <span class="audit-nav-label">批量审核</span>
+    <span class="audit-nav-desc">按文件夹上传多个 Excel，统一创建批次</span>
+  </a>
+  <a
+    href="{% url 'indicator_audit:my_audit_files' %}"
+    class="audit-nav-item{% if active_tab == 'history' %} is-active{% endif %}"
+  >
+    <span class="audit-nav-label">我的审核</span>
+    <span class="audit-nav-desc">查看历史文件与批次记录</span>
+  </a>
+</nav>
+

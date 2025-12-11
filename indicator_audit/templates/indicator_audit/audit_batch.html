@@ -5,19 +5,22 @@
 {% block content %}
 {% include 'indicator_audit/_audit_styles.html' %}
 
-<section class="audit-shell px-6 py-6 sm:px-8 sm:py-8">
-  <header class="audit-hero px-6 py-6 sm:px-8 sm:py-8">
+<section class="audit-shell">
+  <header class="audit-hero px-6 py-6 sm:px-8 sm:py-7">
     <div class="space-y-3">
       <p class="eyebrow">Batch Audit</p>
-      <h2 class="text-2xl font-semibold text-primary m-0">批量审核（按文件夹上传）</h2>
-      <p class="mt-2 text-sm text-secondary">
+      <h2 class="text-4xl font-bold text-primary m-0">批量审核（按文件夹上传）</h2>
+      <p class="mt-2 text-base leading-relaxed text-secondary">
         选择一个包含多个绩效目标 Excel 的文件夹，系统会自动为该批次创建任务，
         并在右侧持续展示总文件数、已完成数量以及排队情况。
       </p>
     </div>
+    <div class="mt-4">
+      {% include 'indicator_audit/_audit_nav.html' %}
+    </div>
   </header>
 
-  <div class="grid gap-6 lg:grid-cols-[1.1fr_minmax(0,0.9fr)] mt-6">
+  <div class="grid gap-6 lg:grid-cols-[1.1fr_minmax(0,0.9fr)]">
     <!-- 左侧：批次创建 + 多文件上传 -->
     <article class="panel px-6 py-6 sm:px-8 sm:py-8">
       <div class="flex items-center justify-between gap-3 flex-wrap">

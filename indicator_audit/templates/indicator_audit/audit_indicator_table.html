@@ -6,7 +6,7 @@
 {% include 'indicator_audit/_audit_styles.html' %}
 
 <section class="audit-shell">
-  <header class="audit-hero px-6 py-8 sm:px-8 sm:py-10">
+  <header class="audit-hero px-6 py-6 sm:px-8 sm:py-7">
     <div class="space-y-4">
       <p class="eyebrow">Audit AI</p>
       <h2 class="text-4xl font-bold text-primary">财政支出绩效目标智能审核</h2>
@@ -14,6 +14,9 @@
         上传项目绩效 Excel 表格，系统会自动解析结构、执行刚性校验并触发智能语义复核，帮助您锁定红灯、黄灯与蓝灯提示，
         对照报告即可快速完成整改并再次提交。
       </p>
+    </div>
+    <div class="mt-4">
+      {% include 'indicator_audit/_audit_nav.html' %}
     </div>
   </header>
 

@@ -2,7 +2,51 @@
   .audit-shell {
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 1.75rem;
+  }
+
+  .audit-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 0;
+  }
+
+  .audit-nav-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.9rem 1.15rem;
+    border-radius: 999px;
+    border: 1px solid rgba(222, 226, 230, 0.9);
+    background: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease,
+      transform 0.12s ease;
+  }
+
+  .audit-nav-item:hover {
+    border-color: rgba(0, 123, 255, 0.4);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    transform: translateY(-1px);
+  }
+
+  .audit-nav-item.is-active {
+    border-color: rgba(0, 123, 255, 0.55);
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.06), rgba(10, 88, 202, 0.12));
+    box-shadow: 0 16px 32px rgba(10, 88, 202, 0.22);
+  }
+
+  .audit-nav-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .audit-nav-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
   }
 
   .audit-hero {
@@ -368,4 +412,3 @@
     }
   }
 </style>
-

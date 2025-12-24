@@ -4,13 +4,13 @@ from typing import Any, Callable, Dict, List, Optional
 from indicator_audit.services.utils.excel_to_markdown import (
     parse_excel_to_markdown as _parse_excel_to_markdown,
 )
-from indicator_audit.services.check_indicator_excel.ai_extractor_from_md import (
+from indicator_audit.services.declaration.ai_extractor_from_md import (
     extract_data_with_ai as _extract_data_with_ai,
 )
-from indicator_audit.services.check_indicator_excel.rigid_validation import (
+from indicator_audit.services.declaration.rigid_validation import (
     run_rigid_validation as _run_rigid_validation,
 )
-from indicator_audit.services.check_indicator_excel.semantic_validator import (
+from indicator_audit.services.declaration.semantic_validator import (
     run_semantic_check as _run_semantic_check,
 )
 

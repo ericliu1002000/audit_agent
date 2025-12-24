@@ -1,4 +1,4 @@
-from indicator_audit.services.check_indicator_excel.audit_pipeline import (
+from indicator_audit.services.declaration.audit_pipeline import (
     parse_excel_to_markdown,
     extract_data_with_ai,
     run_rigid_validation,
@@ -11,4 +11,3 @@ __all__ = [
     "run_rigid_validation",
     "run_semantic_check",
 ]
-

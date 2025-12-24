@@ -11,6 +11,21 @@ class AuditBatch(models.Model):
         unique=True,
         help_text="批次展示名称，通常为目录名，例如“2025教育局专项资金第一批”。",
     )
+    AUDIT_TYPE_DECLARATION = "declaration"
+    AUDIT_TYPE_SELF_EVAL = "self_eval"
+    AUDIT_TYPE_CHOICES = (
+        (AUDIT_TYPE_DECLARATION, "目标申报"),
+        (AUDIT_TYPE_SELF_EVAL, "自评自查"),
+    )
+
+    audit_type = models.CharField(
+        "审核类型",
+        max_length=32,
+        choices=AUDIT_TYPE_CHOICES,
+        default=AUDIT_TYPE_DECLARATION,
+        db_index=True,
+        help_text="区分绩效目标申报与绩效自评自查两类业务。",
+    )
     description = models.TextField(
         "批次说明",
         blank=True,
@@ -82,4 +97,3 @@ class AuditBatch(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - 调试友好的展示
         return self.batch_name
-

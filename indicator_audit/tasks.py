@@ -10,7 +10,7 @@ from django.core.cache import cache
 
 from indicator_audit.models import AuditFile
 from indicator_audit.services import audit_file_service, batch_service
-from indicator_audit.services.check_indicator_excel import audit_pipeline
+from indicator_audit.services.declaration import audit_pipeline
 
 logger = logging.getLogger(__name__)
 

@@ -1,55 +1,26 @@
-{% extends 'user/layout.html' %}
+{% extends 'indicator_audit/audit_base.html' %}
 
 {% block title %}我的审核记录{% endblock %}
 
-{% block content %}
-{% include 'indicator_audit/_audit_styles.html' %}
-
-<section class="audit-shell">
-  <header class="audit-hero px-6 py-6 sm:px-8 sm:py-7">
+{% block audit_content %}
+<section class="flex flex-col gap-7">
+  <header class="rounded-3xl border border-slate-200/60 bg-gradient-to-br from-blue-50/60 to-blue-100/50 px-6 py-6 shadow-[0_25px_55px_rgba(15,23,42,0.08)] sm:px-8 sm:py-7">
     <div class="space-y-3">
-      <p class="eyebrow">Audit History</p>
+      <p class="text-xs uppercase tracking-[0.35em] text-secondary">Audit History</p>
       <h2 class="text-4xl font-bold text-primary m-0">我的审核记录</h2>
       <p class="mt-2 text-base leading-relaxed text-secondary">
         查看自己上传的单个文件及批量审核任务历史，支持二次打开报告，无需重复上传 Excel。
       </p>
     </div>
-    <div class="mt-4">
-      {% include 'indicator_audit/_audit_nav.html' %}
-    </div>
   </header>
-
-  <style>
-    .my-audit-table {
-      table-layout: fixed;
-      width: 100%;
-    }
-
-    .my-audit-table th,
-    .my-audit-table td {
-      vertical-align: top;
-      word-break: break-all;
-      white-space: normal;
-    }
-
-    .my-audit-table .cell-nowrap {
-      white-space: nowrap;
-      word-break: keep-all;
-    }
-
-    .my-audit-table .cell-critical {
-      color: var(--color-danger);
-      font-weight: 600;
-    }
-  </style>
 
   <div class="mt-4 space-y-5">
     <!-- 我的文件列表 -->
-    <article class="panel px-6 py-6 sm:px-8 sm:py-8">
+    <article class="rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-[0_20px_45px_rgba(15,23,42,0.04)] sm:px-8 sm:py-8">
       <h3 class="text-lg font-semibold text-primary mb-3">我的文件</h3>
       {% if file_page_obj.object_list %}
-      <div class="overflow-x-auto border rounded-lg bg-white">
-        <table class="min-w-full text-sm my-audit-table">
+      <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table class="min-w-full table-fixed text-sm">
           <colgroup>
             <col style="width: 14%" />
             <col style="width: 22%" />
@@ -60,37 +31,37 @@
             <col style="width: 6%" />
             <col style="width: 6%" />
           </colgroup>
-          <thead class="bg-gray-50 text-xs text-secondary">
+          <thead class="bg-slate-50 text-xs text-secondary">
             <tr>
-              <th class="px-3 py-2 text-left cell-nowrap">上传时间</th>
-              <th class="px-3 py-2 text-left">文件名</th>
-              <th class="px-3 py-2 text-left">项目名称</th>
-              <th class="px-3 py-2 text-left">主管部门</th>
-              <th class="px-3 py-2 text-left">红灯</th>
-              <th class="px-3 py-2 text-left">健康分</th>
-              <th class="px-3 py-2 text-left">状态</th>
-              <th class="px-3 py-2 text-left">操作</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap align-top">上传时间</th>
+              <th class="px-3 py-2 text-left align-top break-words">文件名</th>
+              <th class="px-3 py-2 text-left align-top break-words">项目名称</th>
+              <th class="px-3 py-2 text-left align-top break-words">主管部门</th>
+              <th class="px-3 py-2 text-left align-top">红灯</th>
+              <th class="px-3 py-2 text-left align-top">健康分</th>
+              <th class="px-3 py-2 text-left align-top">状态</th>
+              <th class="px-3 py-2 text-left align-top">操作</th>
             </tr>
           </thead>
           <tbody>
             {% for f in file_page_obj.object_list %}
             <tr class="border-t last:border-b">
-              <td class="px-3 py-2 cell-nowrap">{{ f.created_at|date:"Y-m-d H:i" }}</td>
-              <td class="px-3 py-2">{{ f.original_filename }}</td>
-              <td class="px-3 py-2">{{ f.project_name|default:"-" }}</td>
-              <td class="px-3 py-2">{{ f.department|default:"-" }}</td>
+              <td class="px-3 py-2 whitespace-nowrap align-top">{{ f.created_at|date:"Y-m-d H:i" }}</td>
+              <td class="px-3 py-2 break-words align-top">{{ f.original_filename }}</td>
+              <td class="px-3 py-2 break-words align-top">{{ f.project_name|default:"-" }}</td>
+              <td class="px-3 py-2 break-words align-top">{{ f.department|default:"-" }}</td>
               <td class="px-3 py-2">
                 {% if f.critical_count > 0 %}
-                  <span class="cell-critical">{{ f.critical_count }}</span>
+                  <span class="text-red-600 font-semibold">{{ f.critical_count }}</span>
                 {% else %}
                   <span>{{ f.critical_count }}</span>
                 {% endif %}
               </td>
               <td class="px-3 py-2">{{ f.score|default:"-" }}</td>
-              <td class="px-3 py-2 cell-nowrap">
+              <td class="px-3 py-2 whitespace-nowrap align-top">
                 {% if f.status == 'completed' %}已完成{% elif f.status == 'processing' %}处理中{% elif f.status == 'failed' %}失败{% elif f.status == 'skipped' %}已跳过{% else %}排队中{% endif %}
               </td>
-              <td class="px-3 py-2">
+              <td class="px-3 py-2 align-top">
                 {% if f.report_json %}
                 <a
                   href="{% url 'indicator_audit:audit_file_detail' f.id %}"
@@ -121,35 +92,38 @@
         </div>
       </div>
       {% else %}
-      <p class="text-sm text-secondary">暂无审核文件记录，可先在“绩效目标智能审核”页面上传 Excel。</p>
+      <div class="text-sm text-secondary space-y-1">
+        <p>暂无审核文件记录，可先在“绩效目标审核（单文件）”页面上传 Excel。</p>
+        <p>如果是自评表，请使用“绩效自评表审核（单文件）”页面。</p>
+      </div>
       {% endif %}
     </article>
 
     <!-- 我的批量列表（占位） -->
-    <article class="panel px-6 py-6 sm:px-8 sm:py-8">
+    <article class="rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-[0_20px_45px_rgba(15,23,42,0.04)] sm:px-8 sm:py-8">
       <h3 class="text-lg font-semibold text-primary mb-3">我的批次</h3>
       {% if batch_page_obj.object_list %}
-      <div class="overflow-x-auto border rounded-lg bg-white">
-        <table class="min-w-full text-sm my-audit-table">
-          <thead class="bg-gray-50 text-xs text-secondary">
+      <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table class="min-w-full table-fixed text-sm">
+          <thead class="bg-slate-50 text-xs text-secondary">
             <tr>
-              <th class="px-3 py-2 text-left cell-nowrap">创建时间</th>
-              <th class="px-3 py-2 text-left">批次名称</th>
-              <th class="px-3 py-2 text-left">文件数</th>
-              <th class="px-3 py-2 text-left">状态</th>
-              <th class="px-3 py-2 text-left">操作</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap align-top">创建时间</th>
+              <th class="px-3 py-2 text-left align-top break-words">批次名称</th>
+              <th class="px-3 py-2 text-left align-top">文件数</th>
+              <th class="px-3 py-2 text-left align-top">状态</th>
+              <th class="px-3 py-2 text-left align-top">操作</th>
             </tr>
           </thead>
           <tbody>
             {% for b in batch_page_obj.object_list %}
             <tr class="border-t last:border-b">
-              <td class="px-3 py-2 cell-nowrap">{{ b.created_at|date:"Y-m-d H:i" }}</td>
-              <td class="px-3 py-2">{{ b.batch_name }}</td>
+              <td class="px-3 py-2 whitespace-nowrap align-top">{{ b.created_at|date:"Y-m-d H:i" }}</td>
+              <td class="px-3 py-2 break-words align-top">{{ b.batch_name }}</td>
               <td class="px-3 py-2">{{ b.total_files }}</td>
               <td class="px-3 py-2">
                 {% if b.status == 'completed' %}已完成{% elif b.status == 'processing' %}处理中{% elif b.status == 'failed' %}失败{% else %}排队中{% endif %}
               </td>
-              <td class="px-3 py-2">
+              <td class="px-3 py-2 align-top">
                 <div class="flex flex-wrap items-center gap-2 text-xs">
                   <a
                     href="{% url 'indicator_audit:audit_batch_detail' b.id %}"
@@ -178,7 +152,9 @@
         </div>
       </div>
       {% else %}
-      <p class="text-sm text-secondary">批量审核功能开发中，当前暂未生成任何批次记录。</p>
+      <div class="text-sm text-secondary space-y-1">
+        <p>暂无批次记录，可前往“绩效目标审核（批量）”或“绩效自评表审核（批量）”创建。</p>
+      </div>
       {% endif %}
     </article>
   </div>

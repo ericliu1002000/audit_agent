@@ -1,5 +1,8 @@
-  <article id="report-panel" class="panel report-panel px-6 py-6 sm:px-8 sm:py-8 hidden">
-    <div class="summary-top">
+  <article
+    id="report-panel"
+    class="hidden rounded-3xl border border-slate-200 bg-white px-6 py-6 shadow-[0_20px_45px_rgba(15,23,42,0.04)] sm:px-8 sm:py-8"
+  >
+    <div class="flex flex-wrap items-start justify-between gap-5">
       <div>
         <p class="text-xs uppercase tracking-[0.3em] text-secondary mb-2">Report</p>
         <h3 id="summary-project" class="text-2xl font-semibold text-primary m-0">-</h3>
@@ -8,55 +11,61 @@
         </p>
       </div>
       <div class="space-y-3 text-right">
-        <span id="summary-badge" class="summary-badge" data-state="warning">待开始</span>
-        <div class="score-card">
+        <span
+          id="summary-badge"
+          class="inline-flex items-center justify-center rounded-full bg-slate-400 px-4 py-1 text-sm font-semibold text-white"
+          data-state="warning"
+        >
+          待开始
+        </span>
+        <div class="min-w-[140px] rounded-2xl border border-slate-200 bg-slate-50/90 px-5 py-4 text-center">
           <span class="text-xs text-secondary">健康指数</span>
-          <strong id="score-value">-</strong>
+          <strong id="score-value" class="block text-3xl font-bold text-primary">-</strong>
         </div>
       </div>
     </div>
 
-    <div class="status-grid mt-6">
-      <div class="status-counter status-critical">
-        <h5>红灯</h5>
-        <p>禁止提交</p>
-        <strong id="count-critical">0</strong>
+    <div class="mt-6 grid gap-4 sm:grid-cols-3">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+        <h5 class="text-xs font-semibold uppercase tracking-[0.1em]">红灯</h5>
+        <p class="mt-1 text-sm text-secondary">禁止提交</p>
+        <strong id="count-critical" class="mt-2 block text-2xl font-semibold text-red-600">0</strong>
       </div>
-      <div class="status-counter status-warning">
-        <h5>黄灯</h5>
-        <p>需人工复核</p>
-        <strong id="count-warning">0</strong>
+      <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+        <h5 class="text-xs font-semibold uppercase tracking-[0.1em]">黄灯</h5>
+        <p class="mt-1 text-sm text-secondary">需人工复核</p>
+        <strong id="count-warning" class="mt-2 block text-2xl font-semibold text-amber-500">0</strong>
       </div>
-      <div class="status-counter status-info">
-        <h5>蓝灯</h5>
-        <p>优化建议</p>
-        <strong id="count-info">0</strong>
+      <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+        <h5 class="text-xs font-semibold uppercase tracking-[0.1em]">蓝灯</h5>
+        <p class="mt-1 text-sm text-secondary">优化建议</p>
+        <strong id="count-info" class="mt-2 block text-2xl font-semibold text-blue-600">0</strong>
       </div>
     </div>
 
-    <div class="issue-board mt-6">
-      <section id="critical-panel" class="issue-column">
+    <div class="mt-6 grid gap-5 lg:grid-cols-3">
+      <section id="critical-panel" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
         <div>
-          <h4>红灯问题</h4>
-          <p>必须立即整改，否则不可提交。</p>
+          <h4 class="text-sm font-semibold">红灯问题</h4>
+          <p class="mt-1 text-sm text-secondary">必须立即整改，否则不可提交。</p>
         </div>
-        <div id="critical-list" class="issue-list"></div>
+        <div id="critical-list" class="mt-4 grid gap-3"></div>
       </section>
 
-      <section id="warning-panel" class="issue-column">
+      <section id="warning-panel" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
         <div>
-          <h4>黄灯问题</h4>
-          <p>建议与业务负责人复核，确认风险后提交。</p>
+          <h4 class="text-sm font-semibold">黄灯问题</h4>
+          <p class="mt-1 text-sm text-secondary">建议与业务负责人复核，确认风险后提交。</p>
         </div>
-        <div id="warning-list" class="issue-list"></div>
+        <div id="warning-list" class="mt-4 grid gap-3"></div>
       </section>
 
-      <section id="info-panel" class="issue-column">
+      <section id="info-panel" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
         <div>
-          <h4>蓝灯提示</h4>
-          <p>为优化建议，可结合实际情况选择采纳。</p>
+          <h4 class="text-sm font-semibold">蓝灯提示</h4>
+          <p class="mt-1 text-sm text-secondary">为优化建议，可结合实际情况选择采纳。</p>
         </div>
-        <div id="info-list" class="issue-list"></div>
+        <div id="info-list" class="mt-4 grid gap-3"></div>
       </section>
     </div>
   </article>
@@ -101,23 +110,33 @@
         }
         items.forEach((issue, index) => {
           const card = document.createElement('article');
-          card.className = 'issue-card';
+          card.className =
+            'rounded-xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]';
           const source = issue.source_label || (issue.source === 'ai' ? '智能审查' : '系统');
           card.innerHTML =
-            `<div class="issue-card-head"><span>#${index + 1}</span><span>${source}</span></div>` +
-            `<div class="issue-title">${issue.title || '问题'}</div>` +
-            `<div class="issue-meta">定位：${issue.position || '未标明'}</div>` +
-            `<p class="issue-description">${issue.description || ''}</p>` +
-            (issue.suggestion ? `<p class="issue-suggestion">建议：${issue.suggestion}</p>` : '');
+            `<div class="mb-2 flex items-center justify-between text-xs text-secondary"><span>#${index + 1}</span><span>${source}</span></div>` +
+            `<div class="mb-1 text-sm font-semibold text-primary">${issue.title || '问题'}</div>` +
+            `<div class="mb-1 text-xs text-secondary">定位：${issue.position || '未标明'}</div>` +
+            `<p class="text-sm text-primary">${issue.description || ''}</p>` +
+            (issue.suggestion ? `<p class="mt-2 text-sm text-blue-700">建议：${issue.suggestion}</p>` : '');
           group.list.appendChild(card);
         });
       }
 
       function setSummaryState(state) {
         summaryBadge.dataset.state = state;
-        if (state === 'success') summaryBadge.textContent = '审核通过，可提交';
-        else if (state === 'warning') summaryBadge.textContent = '存在提示，建议复核';
-        else summaryBadge.textContent = '存在红灯，请整改';
+        summaryBadge.className =
+          'inline-flex items-center justify-center rounded-full px-4 py-1 text-sm font-semibold';
+        if (state === 'success') {
+          summaryBadge.classList.add('bg-emerald-500', 'text-white');
+          summaryBadge.textContent = '审核通过，可提交';
+        } else if (state === 'warning') {
+          summaryBadge.classList.add('bg-amber-400', 'text-slate-900');
+          summaryBadge.textContent = '存在提示，建议复核';
+        } else {
+          summaryBadge.classList.add('bg-red-500', 'text-white');
+          summaryBadge.textContent = '存在红灯，请整改';
+        }
       }
 
       window.renderAuditReport = function renderAuditReport(result) {
@@ -147,4 +166,3 @@
       };
     })();
   </script>
-

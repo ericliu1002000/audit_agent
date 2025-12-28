@@ -1,16 +1,16 @@
 {% extends 'indicator_audit/audit_base.html' %}
 
-{% block title %}绩效目标智能审核{% endblock %}
+{% block title %}绩效自评智能审核{% endblock %}
 
 {% block audit_content %}
 <section class="flex flex-col gap-7">
   <header class="rounded-3xl border border-slate-200/60 bg-gradient-to-br from-blue-50/60 to-blue-100/50 px-6 py-6 shadow-[0_25px_55px_rgba(15,23,42,0.08)] sm:px-8 sm:py-7">
     <div class="space-y-4">
       <p class="text-xs uppercase tracking-[0.35em] text-secondary">Audit AI</p>
-      <h2 class="text-4xl font-bold text-primary">财政支出绩效目标智能审核</h2>
+      <h2 class="text-4xl font-bold text-primary">财政支出绩效自评智能审核</h2>
       <p class="text-base leading-relaxed text-secondary">
-        上传项目绩效 Excel 表格，系统会自动解析结构、执行刚性校验并触发智能语义复核，帮助您锁定红灯、黄灯与蓝灯提示，
-        对照报告即可快速完成整改并再次提交。
+        上传绩效自评 Excel 表格，系统会自动解析结构、校验得分计算与偏差原因填写，
+        并触发智能语义复核，帮助您快速定位扣分与逻辑风险。
       </p>
     </div>
   </header>
@@ -20,7 +20,7 @@
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <p class="text-xs uppercase tracking-[0.3em] text-secondary mb-1">Upload</p>
-          <h3 class="text-2xl font-semibold text-primary m-0">上传 Excel 申报表</h3>
+          <h3 class="text-2xl font-semibold text-primary m-0">上传 Excel 自评表</h3>
         </div>
         <span class="text-xs text-secondary">平均耗时 10-15 秒</span>
       </div>
@@ -29,11 +29,11 @@
         class="mt-6 space-y-5"
         autocomplete="off"
         enctype="multipart/form-data"
-        data-audit-type="declaration"
+        data-audit-type="self_eval"
       >
         <div class="grid gap-3 rounded-2xl border-2 border-dashed border-blue-300/60 bg-slate-50/80 p-6">
           <p class="text-sm font-semibold text-primary m-0">选择 Excel 文件</p>
-          <p class="text-sm text-secondary m-0">请选择符合模板的 .xlsx 文件，建议大小 &lt; 10MB。</p>
+          <p class="text-sm text-secondary m-0">请选择符合绩效自评表模板的 .xlsx 文件，建议大小 &lt; 10MB。</p>
           <input id="excel-file" name="file" type="file" class="hidden" accept=".xlsx" required />
           <div class="flex flex-wrap items-center gap-3 mt-2">
             <label
@@ -277,7 +277,7 @@
 
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
-      formData.append('audit_type', form.dataset.auditType || 'declaration');
+      formData.append('audit_type', form.dataset.auditType || 'self_eval');
 
       try {
         const resp = await fetch(endpoints.upload, {

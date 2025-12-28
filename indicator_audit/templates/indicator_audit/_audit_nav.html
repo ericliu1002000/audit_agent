@@ -1,24 +1,32 @@
-<nav class="audit-nav" aria-label="审核导航">
+<nav class="flex flex-col gap-2" aria-label="审核导航">
   <a
     href="{% url 'indicator_audit:audit_indicator_page' %}"
-    class="audit-nav-item{% if active_tab == 'single' %} is-active{% endif %}"
+    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-primary transition hover:border-blue-300 hover:bg-blue-50/70{% if active_tab == 'single' %} border-blue-400 bg-blue-100/80 shadow-sm{% endif %}"
   >
-    <span class="audit-nav-label">单文件审核</span>
-    <span class="audit-nav-desc">上传单个 Excel 并查看智能报告</span>
+    <span>绩效目标审核（单文件）</span>
   </a>
   <a
     href="{% url 'indicator_audit:audit_batch_page' %}"
-    class="audit-nav-item{% if active_tab == 'batch' %} is-active{% endif %}"
+    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-primary transition hover:border-blue-300 hover:bg-blue-50/70{% if active_tab == 'batch' %} border-blue-400 bg-blue-100/80 shadow-sm{% endif %}"
   >
-    <span class="audit-nav-label">批量审核</span>
-    <span class="audit-nav-desc">按文件夹上传多个 Excel，统一创建批次</span>
+    <span>绩效目标审核（批量）</span>
+  </a>
+  <a
+    href="{% url 'indicator_audit:audit_self_eval_page' %}"
+    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-primary transition hover:border-blue-300 hover:bg-blue-50/70{% if active_tab == 'self_eval' %} border-blue-400 bg-blue-100/80 shadow-sm{% endif %}"
+  >
+    <span>绩效自评表审核（单文件）</span>
+  </a>
+  <a
+    href="{% url 'indicator_audit:audit_self_eval_batch_page' %}"
+    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-primary transition hover:border-blue-300 hover:bg-blue-50/70{% if active_tab == 'self_eval_batch' %} border-blue-400 bg-blue-100/80 shadow-sm{% endif %}"
+  >
+    <span>绩效自评表审核（批量）</span>
   </a>
   <a
     href="{% url 'indicator_audit:my_audit_files' %}"
-    class="audit-nav-item{% if active_tab == 'history' %} is-active{% endif %}"
+    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-primary transition hover:border-blue-300 hover:bg-blue-50/70{% if active_tab == 'history' %} border-blue-400 bg-blue-100/80 shadow-sm{% endif %}"
   >
-    <span class="audit-nav-label">我的审核</span>
-    <span class="audit-nav-desc">查看历史文件与批次记录</span>
+    <span>我的审核</span>
   </a>
 </nav>
-

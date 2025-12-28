@@ -66,6 +66,13 @@ def audit_upload(request):
             json_dumps_params={"ensure_ascii": False},
         )
 
+    audit_type = (request.POST.get("audit_type") or "").strip()
+    if audit_type not in (
+        AuditBatch.AUDIT_TYPE_DECLARATION,
+        AuditBatch.AUDIT_TYPE_SELF_EVAL,
+    ):
+        audit_type = AuditBatch.AUDIT_TYPE_DECLARATION
+
     original_filename = uploaded_file.name or ""
     file_size = int(getattr(uploaded_file, "size", 0) or 0)
     user = request.user if request.user.is_authenticated else None
@@ -123,7 +130,7 @@ def audit_upload(request):
         file_hash=file_hash,
     )
     _init_task_status(task_id)
-    run_audit_task.delay(file_path, task_id, audit_file.id)
+    run_audit_task.delay(file_path, task_id, audit_file.id, audit_type)
 
     return JsonResponse(
         {"task_id": task_id, "audit_file_id": audit_file.id},
@@ -185,6 +192,7 @@ def api_create_batch(request):
 
     batch_name = (payload.get("batch_name") or "").strip()
     description = (payload.get("description") or "").strip() or None
+    audit_type = (payload.get("audit_type") or "").strip()
 
     if not batch_name:
         return JsonResponse(
@@ -194,7 +202,12 @@ def api_create_batch(request):
         )
 
     try:
-        batch = batch_service.create_batch(request.user, batch_name, description)
+        batch = batch_service.create_batch(
+            request.user,
+            batch_name,
+            description,
+            audit_type=audit_type,
+        )
     except ValueError as exc:
         return JsonResponse(
             {"error": str(exc)},

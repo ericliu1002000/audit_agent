@@ -9,7 +9,12 @@ from django.utils import timezone
 from indicator_audit.models import AuditBatch, AuditFile
 
 
-def create_batch(user, batch_name: str, description: str | None = None) -> AuditBatch:
+def create_batch(
+    user,
+    batch_name: str,
+    description: str | None = None,
+    audit_type: str | None = None,
+) -> AuditBatch:
     """
     创建一个新的审核批次。
 
@@ -21,6 +26,11 @@ def create_batch(user, batch_name: str, description: str | None = None) -> Audit
         raise ValueError("批次名称不能为空。")
 
     creator = user if user and user.is_authenticated else None
+    if audit_type not in (
+        AuditBatch.AUDIT_TYPE_DECLARATION,
+        AuditBatch.AUDIT_TYPE_SELF_EVAL,
+    ):
+        audit_type = AuditBatch.AUDIT_TYPE_DECLARATION
 
     # 若已存在同名批次，视为同一批次，直接复用（便于断点续传）
     try:
@@ -40,6 +50,7 @@ def create_batch(user, batch_name: str, description: str | None = None) -> Audit
             description=(description or "").strip() or None,
             created_by=creator,
             status=AuditBatch.STATUS_PENDING,
+            audit_type=audit_type,
         )
     except IntegrityError as exc:  # pragma: no cover - 由唯一索引兜底
         raise ValueError("批次名称已存在，请更换一个名称。") from exc

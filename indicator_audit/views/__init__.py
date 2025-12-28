@@ -6,6 +6,8 @@ indicator_audit.views
 
 - 页面类视图统一放在 pages.py 中，例如：
   - AuditIndicatorPage：单文件智能审核页面 `/indicator_audit/audit/indicator/`
+  - AuditSelfEvalPage：自评表单文件审核页面 `/indicator_audit/audit/self-eval/`
+  - AuditSelfEvalBatchPage：自评批量审核页面 `/indicator_audit/audit/self-eval/batch/`
   - AuditBatchPage：批量审核页面 `/indicator_audit/audit/batch/`
   - MyAuditFileListPage：我的审核记录页面 `/indicator_audit/my/files/`
   - AuditFileDetailPage：单文件历史报告详情 `/indicator_audit/file/<pk>/`
@@ -19,7 +21,9 @@ indicator_audit.views
 
 from .pages import (
     AuditIndicatorPage,
+    AuditSelfEvalPage,
     AuditBatchPage,
+    AuditSelfEvalBatchPage,
     MyAuditFileListPage,
     AuditFileDetailPage,
     AuditBatchDetailPage,
@@ -38,7 +42,9 @@ from .api import (
 __all__ = [
     # 页面类视图
     "AuditIndicatorPage",
+    "AuditSelfEvalPage",
     "AuditBatchPage",
+    "AuditSelfEvalBatchPage",
     "MyAuditFileListPage",
     "AuditFileDetailPage",
     "AuditBatchDetailPage",

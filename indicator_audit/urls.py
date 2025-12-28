@@ -11,9 +11,19 @@ urlpatterns = [
         name="audit_indicator_page",
     ),
     path(
+        "audit/self-eval/",
+        views.AuditSelfEvalPage.as_view(),
+        name="audit_self_eval_page",
+    ),
+    path(
         "audit/batch/",
         views.AuditBatchPage.as_view(),
         name="audit_batch_page",
+    ),
+    path(
+        "audit/self-eval/batch/",
+        views.AuditSelfEvalBatchPage.as_view(),
+        name="audit_self_eval_batch_page",
     ),
     path(
         "api/audit/upload/",

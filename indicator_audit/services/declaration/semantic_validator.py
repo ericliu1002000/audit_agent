@@ -10,7 +10,7 @@ import json
 import logging
 from typing import Any, Dict, List
 
-from indicator_audit.schemas import PerformanceDeclarationSchema
+from indicator_audit.services.declaration.schemas import PerformanceDeclarationSchema
 from utils.extract_text_from_response import extract_text_from_response
 from utils.clean_json_string import clean_json_string
 from utils.deepseek_client import invoke_deepseek

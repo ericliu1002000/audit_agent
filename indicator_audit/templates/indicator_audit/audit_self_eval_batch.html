@@ -1,15 +1,15 @@
 {% extends 'indicator_audit/audit_base.html' %}
 
-{% block title %}批量审核（文件夹模式）{% endblock %}
+{% block title %}自评批量审核（文件夹模式）{% endblock %}
 
 {% block audit_content %}
 <section class="flex flex-col gap-7">
   <header class="rounded-3xl border border-slate-200/60 bg-gradient-to-br from-blue-50/60 to-blue-100/50 px-6 py-6 shadow-[0_25px_55px_rgba(15,23,42,0.08)] sm:px-8 sm:py-7">
     <div class="space-y-3">
       <p class="text-xs uppercase tracking-[0.35em] text-secondary">Batch Audit</p>
-      <h2 class="text-4xl font-bold text-primary m-0">批量审核（按文件夹上传）</h2>
+      <h2 class="text-4xl font-bold text-primary m-0">自评批量审核（按文件夹上传）</h2>
       <p class="mt-2 text-base leading-relaxed text-secondary">
-        选择一个包含多个绩效目标 Excel 的文件夹，系统会自动为该批次创建任务，
+        选择一个包含多个绩效自评 Excel 的文件夹，系统会自动为该批次创建任务，
         并在右侧持续展示总文件数、已完成数量以及排队情况。
       </p>
     </div>
@@ -29,8 +29,8 @@
         id="batch-form"
         class="mt-5 space-y-4"
         autocomplete="off"
-        data-audit-type="declaration"
-        data-storage-key="indicator_audit_active_batch_id"
+        data-audit-type="self_eval"
+        data-storage-key="indicator_audit_active_self_eval_batch_id"
       >
         <div class="grid gap-3 rounded-2xl border-2 border-dashed border-blue-300/60 bg-slate-50/80 p-6">
           <p class="text-sm font-semibold text-primary m-0">选择 Excel 文件或整个文件夹</p>
@@ -167,7 +167,7 @@
     const failedEl = document.getElementById('batch-failed');
 
     const STORAGE_KEY = form.dataset.storageKey || 'indicator_audit_active_batch_id';
-    const auditType = form.dataset.auditType || 'declaration';
+    const auditType = form.dataset.auditType || 'self_eval';
     let activeBatchId = null;
     let pollTimer = null;
 

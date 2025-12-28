@@ -34,6 +34,26 @@ class AuditIndicatorPage(LoginRequiredMixin, TemplateView):
         return context
 
 
+class AuditSelfEvalPage(LoginRequiredMixin, TemplateView):
+    """
+    自评表单文件智能审核页面。
+
+    URL:
+        /indicator_audit/audit/self-eval/
+
+    功能：
+        - 提供上传单个绩效自评表的表单。
+        - 右侧显示实时执行日志与审核报告。
+    """
+
+    template_name = "indicator_audit/audit_self_eval_table.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "self_eval"
+        return context
+
+
 class AuditBatchPage(LoginRequiredMixin, TemplateView):
     """
     批量审核页面（按文件夹模式）。
@@ -51,6 +71,26 @@ class AuditBatchPage(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["active_tab"] = "batch"
+        return context
+
+
+class AuditSelfEvalBatchPage(LoginRequiredMixin, TemplateView):
+    """
+    自评批量审核页面（按文件夹模式）。
+
+    URL:
+        /indicator_audit/audit/self-eval/batch/
+
+    功能：
+        - 选择包含多个自评 Excel 的目录或多文件。
+        - 创建自评审核批次并显示整体进度（总数/已完成/排队/失败）。
+    """
+
+    template_name = "indicator_audit/audit_self_eval_batch.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "self_eval_batch"
         return context
 
 

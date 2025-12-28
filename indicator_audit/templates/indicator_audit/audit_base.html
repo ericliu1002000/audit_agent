@@ -1,0 +1,17 @@
+{% extends 'user/layout.html' %}
+
+{% block content %}
+<div class="relative">
+  <div class="fixed left-4 top-28 z-20 w-56"/>
+
+  <div
+
+    <div class="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-[0_20px_45px_rgba(15,23,42,0.06)]">
+      {% include 'indicator_audit/_audit_nav.html' %}
+    </div>
+  </div>
+  <div class="flex flex-col gap-7">
+    {% block audit_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

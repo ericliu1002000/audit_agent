@@ -5,7 +5,7 @@ import math
 from typing import List, Dict, Any
 from datetime import datetime
 
-from indicator_audit.schemas import PerformanceDeclarationSchema
+from indicator_audit.services.declaration.schemas import PerformanceDeclarationSchema
 from indicator_audit.constants import (
     ISSUE_TYPE_COMPLETENESS,
     ISSUE_TYPE_COMPLIANCE,

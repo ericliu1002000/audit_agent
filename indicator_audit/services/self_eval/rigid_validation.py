@@ -40,6 +40,22 @@ def _approx_equal(a: float, b: float, tolerance: float = 0.1) -> bool:
     return abs(a - b) <= tolerance
 
 
+def _calculate_expected_score(
+    target_value: Optional[float],
+    actual_value: Optional[float],
+    score_weight: Optional[float],
+) -> Optional[float]:
+    """根据 A/B 与分值计算应得分，无法计算时返回 None。"""
+
+    if target_value is None or actual_value is None or score_weight is None:
+        return None
+    if target_value == 0:
+        return None
+    if actual_value >= target_value:
+        return score_weight
+    return (actual_value / target_value) * score_weight
+
+
 def run_rigid_validation(data: PerformanceSelfEvalSchema) -> List[Dict[str, Any]]:
     """
     功能说明:
@@ -119,7 +135,7 @@ def run_rigid_validation(data: PerformanceSelfEvalSchema) -> List[Dict[str, Any]
         reason_blank = _is_blank(ind.deviation_reason)
         loc = f"指标: {ind.level3 or ind.level2 or ind.level1 or '未命名指标'}"
 
-        if a_value is None or b_value is None or weight is None or self_score is None:
+        if a_value is None or b_value is None or weight is None:
             continue
 
         if a_value == 0:
@@ -130,8 +146,19 @@ def run_rigid_validation(data: PerformanceSelfEvalSchema) -> List[Dict[str, Any]
             )
             continue
 
+        expected_score = _calculate_expected_score(a_value, b_value, weight)
+        if self_score is None:
+            add_error(
+                loc,
+                "指标得分未填写或无法识别。",
+                ISSUE_TYPE_COMPLETENESS,
+            )
+            continue
+
+        if expected_score is None:
+            continue
+
         if b_value >= a_value:
-            expected_score = weight
             if not _approx_equal(self_score, expected_score, tolerance=0.1):
                 add_error(
                     loc,
@@ -139,7 +166,6 @@ def run_rigid_validation(data: PerformanceSelfEvalSchema) -> List[Dict[str, Any]
                     ISSUE_TYPE_COMPLIANCE,
                 )
         else:
-            expected_score = (b_value / a_value) * weight
             if not _approx_equal(self_score, expected_score, tolerance=0.1):
                 add_error(
                     loc,
@@ -160,6 +186,7 @@ def run_rigid_validation(data: PerformanceSelfEvalSchema) -> List[Dict[str, Any]
     # =========================================
     total_score = _to_float(data.total_score)
     if total_score is not None:
+        missing_indicator_scores = 0
         component_scores: List[float] = []
         for item in data.budget_items:
             score = _to_float(item.self_score)
@@ -169,6 +196,24 @@ def run_rigid_validation(data: PerformanceSelfEvalSchema) -> List[Dict[str, Any]
             score = _to_float(ind.self_score)
             if score is not None:
                 component_scores.append(score)
+                continue
+            expected_score = _calculate_expected_score(
+                _to_float(ind.target_value),
+                _to_float(ind.actual_value),
+                _to_float(ind.score_weight),
+            )
+            if expected_score is not None:
+                component_scores.append(expected_score)
+                missing_indicator_scores += 1
+            elif _to_float(ind.score_weight) is not None:
+                missing_indicator_scores += 1
+
+        if missing_indicator_scores:
+            add_warning(
+                "指标得分",
+                f"存在 {missing_indicator_scores} 条指标得分缺失，合计校验使用推算值。",
+                ISSUE_TYPE_COMPLETENESS,
+            )
 
         if component_scores:
             computed_total = sum(component_scores)

@@ -33,9 +33,9 @@ def parse_excel_to_markdown(file_path: str) -> str:
     """
     将 Excel 文件解析为 Markdown 表格字符串（针对指标审核场景做了定制优化）。
     处理流程包括：
-    1. 计算数据实际占用的最大列数，用于约束 Markdown 行宽；
-    2. 解开合并单元格并填充，避免信息丢失；
-    3. 文本标准化 + 行内去重 + 补齐列数，保证输出表格列数统一、语义紧凑。
+    1. 基于 sheet 尺寸初始化 Grid，填充原始单元格值；
+    2. 展开合并单元格，将左上角值覆盖到区域内所有格子；
+    3. 使用 clean_text 进行文本标准化，按原始网格输出 Markdown 表格。
 
     参数:
         file_path (str): Excel 文件的绝对路径或相对路径。
@@ -62,23 +62,20 @@ def parse_excel_to_markdown(file_path: str) -> str:
         raise ValueError("请上传xlsx格式的表格文件") from exc
     sheet = workbook.worksheets[0]
 
-    # Step 1: 预先扫描所有行，按照“有效数据列”统计最大列数，避免依赖不准确的 sheet.max_column。
-    max_cols = 0
-    required_keywords = {"一级指标", "二级指标", "三级指标"}
-    found_keywords = set()
-    for raw_row in sheet.iter_rows(values_only=True):
-        normalized_row = [clean_text(cell) for cell in raw_row]
-        while normalized_row and normalized_row[-1] == "":
-            normalized_row.pop()
-        for text in normalized_row:
-            if text in required_keywords:
-                found_keywords.add(text)
-        if len(normalized_row) > max_cols:
-            max_cols = len(normalized_row)
+    max_rows = sheet.max_row or 0
+    max_cols = sheet.max_column or 0
+    if max_rows == 0 or max_cols == 0:
+        return ""
 
-    if required_keywords - found_keywords:
-        raise ValueError("模板格式错误，缺少指标数据（确认文件包含一级指标、二级指标、三级指标）")
-    # 先复制 merged_cells.ranges，再遍历，避免在 unmerge 过程中修改原列表导致的迭代问题。
+    # Step 1: 初始化 Grid 并填充原始值
+    grid: List[List[object]] = []
+    for row_index in range(1, max_rows + 1):
+        row_values = []
+        for col_index in range(1, max_cols + 1):
+            row_values.append(sheet.cell(row=row_index, column=col_index).value)
+        grid.append(row_values)
+
+    # Step 2: 处理合并单元格，填充合并区域内所有单元格
     for merged_range in list(sheet.merged_cells.ranges):
         min_row, min_col, max_row, max_col = (
             merged_range.min_row,
@@ -86,58 +83,33 @@ def parse_excel_to_markdown(file_path: str) -> str:
             merged_range.max_row,
             merged_range.max_col,
         )
-        # 合并区域只有左上角有值，这里需要把左上角的值填充到整个区域，确保扁平化后信息不丢失。
         top_left_value = sheet.cell(row=min_row, column=min_col).value
-        sheet.unmerge_cells(str(merged_range))
-        for row in range(min_row, max_row + 1):
-            for col in range(min_col, max_col + 1):
-                sheet.cell(row=row, column=col).value = top_left_value
+        for row_index in range(min_row, max_row + 1):
+            row_values = grid[row_index - 1]
+            for col_index in range(min_col, max_col + 1):
+                row_values[col_index - 1] = top_left_value
 
-    processed_rows: List[List[str]] = []
-    for row in sheet.iter_rows(values_only=True):
-        original_row = [clean_text(cell) for cell in row]
-
-        # 行内去重：必须基于“原始行”的前一个值比较，避免边修改边比较导致 ['A','A','A'] -> ['A','','A'] 的错误。
-        cleaned_row: List[str] = []
-        for col_index, value in enumerate(original_row):
-            if col_index == 0:
-                cleaned_row.append(value)
-                continue
-            prev_original_value = original_row[col_index - 1]
-            cleaned_row.append("" if value == prev_original_value else value)
-
-        # 先移除尾部空值，确保“实际列数”最精简，再补齐到 max_cols，保证 Markdown 列宽一致。
-        while cleaned_row and cleaned_row[-1] == "":
-            cleaned_row.pop()
-
-        if not cleaned_row:
-            continue
-
-        if max_cols == 0:
-            max_cols = len(cleaned_row)
-
-        while len(cleaned_row) < max_cols:
-            cleaned_row.append("")
-
-        processed_rows.append(cleaned_row)
-
-    if not processed_rows:
-        return ""
-
+    # Step 3: 清洗文本并记录关键字段
+    required_keywords = {"一级指标", "二级指标", "三级指标"}
+    found_keywords = set()
     final_rows: List[List[str]] = []
-    for cleaned_row in processed_rows:
-        if final_rows and cleaned_row == final_rows[-1]:
-            continue
+    for row in grid:
+        cleaned_row = [clean_text(cell) for cell in row]
+        for text in cleaned_row:
+            if text in required_keywords:
+                found_keywords.add(text)
         final_rows.append(cleaned_row)
 
-    if not final_rows:
+    if required_keywords - found_keywords:
+        raise ValueError("模板格式错误，缺少指标数据（确认文件包含一级指标、二级指标、三级指标）")
+
+    if not any(any(cell != "" for cell in row) for row in final_rows):
         return ""
 
     markdown_lines = ["|" + "|".join(row) + "|" for row in final_rows]
 
     # Markdown 表格需要在首行（表头）后插入分割线，用于区分表头和主体。
-    divider = "|" + "|".join(["---"] * max(max_cols, 1)) + "|"
+    divider = "|" + "|".join(["---"] * max_cols) + "|"
     markdown_lines.insert(1, divider)
 
     return "\n".join(markdown_lines)
-

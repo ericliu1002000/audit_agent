@@ -119,6 +119,13 @@ MILVUS_EMBED_DIM = int(os.getenv("MILVUS_EMBED_DIM", "1024"))
 
 EMBED_URL = os.getenv("EMBED_URL", "")
 EMBED_TOKEN = os.getenv("EMBED_TOKEN", "")
+SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY", "")
+SILICONFLOW_API_EMBEDDING_URL = os.getenv(
+    "SILICONFLOW_API_EMBEDDING_URL", "https://api.siliconflow.cn/v1/embeddings"
+)
+SILICONFLOW_EMBEDDING_MODEL = os.getenv(
+    "SILICONFLOW_EMBEDDING_MODEL", "Qwen/Qwen3-Embedding-0.6B"
+)
 
 CACHES = {
     "default": {

@@ -41,8 +41,9 @@ class AuthFlowTests(TestCase):
         })
         self.assertRedirects(response, reverse('user:login'))
         # Should be logged out now
-        response = self.client.get(reverse('home'))
+        response = self.client.get(reverse('user:change-password'))
         self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(reverse('user:login')))
         # Ensure new password works
         self.assertTrue(self.client.login(username=self.user.username, password=new_password))
 
@@ -56,6 +57,7 @@ class AuthFlowTests(TestCase):
         })
         self.assertRedirects(response, reverse('user:login'))
         # After reset, should be forced to login again
-        response = self.client.get(reverse('home'))
+        response = self.client.get(reverse('user:change-password'))
         self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(reverse('user:login')))
         self.assertTrue(self.client.login(username=self.user.username, password=new_password))

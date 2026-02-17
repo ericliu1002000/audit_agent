@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'indicators',
     'indicator_audit',
     'regions',
+    'budget_audit',
 ]
 
 MIDDLEWARE = [
@@ -115,6 +116,9 @@ MILVUS_USER = os.getenv("MILVUS_USER", "root")
 MILVUS_PASSWORD = os.getenv("MILVUS_PASSWORD", "")
 MILVUS_DB_NAME = os.getenv("MILVUS_DB_NAME", "default")
 MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "indicator_vectors")
+BUDGET_AUDIT_MILVUS_COLLECTION = os.getenv(
+    "BUDGET_AUDIT_MILVUS_COLLECTION", "budget_material_vector_index"
+)
 MILVUS_EMBED_DIM = int(os.getenv("MILVUS_EMBED_DIM", "1024"))
 
 EMBED_URL = os.getenv("EMBED_URL", "")

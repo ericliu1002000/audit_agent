@@ -26,4 +26,5 @@ urlpatterns = [
     path("regions/", include("regions.urls")),
     path("indicators/", include("indicators.urls")),
     path("indicator_audit/", include("indicator_audit.urls")),
+    path("budget_audit/", include("budget_audit.urls")),
 ]

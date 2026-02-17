@@ -7,7 +7,6 @@ from typing import Any, Dict, List
 from django.utils import timezone
 
 from markdown import markdown
-from xhtml2pdf import pisa
 
 from indicator_audit.models import AuditFile
 
@@ -131,6 +130,11 @@ def build_file_report_markdown(audit_file: AuditFile) -> str:
 def render_markdown_to_pdf_bytes(markdown_text: str) -> bytes:
   """将 Markdown 文本转换为 PDF 字节流，不在磁盘落地."""
 
+  try:
+    from xhtml2pdf import pisa
+  except ImportError as exc:
+    raise ValueError("未安装 xhtml2pdf，无法导出 PDF。") from exc
+
   html_body = markdown(markdown_text, output_format="html")
   html = f"""
   <html>
@@ -159,4 +163,3 @@ def build_file_report_pdf(audit_file: AuditFile) -> bytes:
 
   markdown_text = build_file_report_markdown(audit_file)
   return render_markdown_to_pdf_bytes(markdown_text)
-

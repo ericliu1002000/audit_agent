@@ -22,6 +22,7 @@ from user.views import HomeLandingPage
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", HomeLandingPage.as_view(), name="home"),
+    path("api/", include(("api.urls", "api"), namespace="api")),
     path("", include("user.urls")),
     path("regions/", include("regions.urls")),
     path("indicators/", include("indicators.urls")),

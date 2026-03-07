@@ -46,7 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'drf_spectacular',
+    'django_filters',
     'django_extensions',
+    'api',
     'user',
     'indicators',
     'indicator_audit',
@@ -190,6 +194,36 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'user:login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'user:login'
+SESSION_COOKIE_SECURE = DJANGO_ENV == "production"
+CSRF_COOKIE_SECURE = DJANGO_ENV == "production"
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_TRUSTED_ORIGINS_RAW = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in CSRF_TRUSTED_ORIGINS_RAW.split(",")
+    if origin.strip()
+]
+CSRF_FAILURE_VIEW = "api.csrf.csrf_failure"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "api.authentication.ApiSessionAuthentication",
+    ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+    ),
+    "DEFAULT_PAGINATION_CLASS": "api.pagination.StandardResultsSetPagination",
+    "EXCEPTION_HANDLER": "api.exception_handler.custom_exception_handler",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "audit_agent API",
+    "DESCRIPTION": "React / API mode endpoints for audit_agent.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
 
 LOGGING = {
     "version": 1,

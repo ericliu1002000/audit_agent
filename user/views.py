@@ -37,7 +37,7 @@ class LoginView(FormView):
         return form
 
     def form_valid(self, form):
-        auth_service.login_user(self.request, form.get_user())
+        auth_service.login_with_form(self.request, form)
         messages.success(self.request, '欢迎回来，登录成功。')
         return super().form_valid(form)
 
@@ -58,7 +58,7 @@ class ChangePasswordView(LoginRequiredMixin, FormView):
         return form
 
     def form_valid(self, form):
-        auth_service.change_user_password(self.request, form, keep_session=False)
+        auth_service.change_password_with_form(self.request, form, keep_session=False)
         messages.success(self.request, '密码修改成功，请使用新密码重新登录。')
         auth_service.logout_user(self.request)
         return super().form_valid(form)
@@ -80,7 +80,7 @@ class ForgotPasswordView(LoginRequiredMixin, FormView):
         return form
 
     def form_valid(self, form):
-        auth_service.change_user_password(self.request, form, keep_session=False)
+        auth_service.change_password_with_form(self.request, form, keep_session=False)
         messages.success(self.request, '密码重置成功，请使用新密码登录。')
         auth_service.logout_user(self.request)
         return super().form_valid(form)

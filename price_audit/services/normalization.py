@@ -90,3 +90,13 @@ def parse_price_range(value):
         return one, one
 
     return parse_decimal(parts[0]), parse_decimal(parts[1])
+
+
+def build_embedding_text(*, material_name: str, spec_model: str, unit: str) -> str:
+    """构造价格审核标准价的向量文本。"""
+
+    return (
+        f"材料名称:{normalize_text(material_name)} | "
+        f"规格型号:{normalize_text(spec_model)} | "
+        f"单位:{normalize_text(unit)}"
+    )

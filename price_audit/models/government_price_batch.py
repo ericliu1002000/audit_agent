@@ -10,11 +10,19 @@ class GovernmentPriceBatch(models.Model):
     """政府标准价导入批次。
 
     功能说明:
-        记录一次完整的政府标准价导入任务，包括地区、年份、上传文件、上传人和是否生效。
-        同地区同年份再次上传时，旧批次会被标记为失效，新批次成为当前生效版本。
+        记录某地区某年份当前使用中的政府标准价数据集，以及最近一次上传文件和向量化状态。
+        同地区同年份再次上传时，系统会在当前批次上增量同步明细，而不是整批新建替换。
     使用示例:
         batch = GovernmentPriceBatch.objects.create(region_name="天津", year=2026)
     """
+
+    class VectorStatus(models.TextChoices):
+        """向量化状态。"""
+
+        PENDING = "pending_vectorization", "待向量化"
+        PROCESSING = "vectorizing", "向量化中"
+        ACTIVE = "active", "可用于审核"
+        FAILED = "vector_failed", "向量化失败"
 
     region_name = models.CharField("地区", max_length=100, db_index=True)
     year = models.PositiveIntegerField("年份", db_index=True)
@@ -43,6 +51,21 @@ class GovernmentPriceBatch(models.Model):
     )
     total_rows = models.PositiveIntegerField("总行数", default=0)
     success_rows = models.PositiveIntegerField("有效行数", default=0)
+    vector_status = models.CharField(
+        "向量状态",
+        max_length=32,
+        choices=VectorStatus.choices,
+        default=VectorStatus.PENDING,
+        db_index=True,
+    )
+    vector_total = models.PositiveIntegerField("待向量化总数", default=0)
+    vector_success = models.PositiveIntegerField("向量化成功数", default=0)
+    vector_failed = models.PositiveIntegerField("向量化失败数", default=0)
+    vector_task_id = models.CharField("Celery任务ID", max_length=64, blank=True, db_index=True)
+    vector_queued_at = models.DateTimeField("入队时间", null=True, blank=True)
+    vector_started_at = models.DateTimeField("开始执行时间", null=True, blank=True)
+    vectorized_at = models.DateTimeField("向量化完成时间", null=True, blank=True)
+    last_error = models.TextField("最后错误", blank=True)
     remark = models.TextField("备注", blank=True)
     template_version = models.CharField("模板版本", max_length=20, default="v1")
     deactivated_at = models.DateTimeField("失效时间", null=True, blank=True)

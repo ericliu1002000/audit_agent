@@ -19,7 +19,7 @@ class FundUsageRecommendationServiceTests(unittest.TestCase):
 
     def test_no_results_above_threshold_returns_empty_list(self):
         with patch(
-            "indicators.services.recommendation.call_begm3_api",
+            "indicators.services.recommendation.call_embedding_api",
             return_value=[0.1, 0.2],
         ) as mock_embed, patch(
             "indicators.services.recommendation.get_milvus_manager"
@@ -41,7 +41,7 @@ class FundUsageRecommendationServiceTests(unittest.TestCase):
 
     def test_recommendations_are_grouped_sorted_and_include_indicators(self):
         with patch(
-            "indicators.services.recommendation.call_begm3_api",
+            "indicators.services.recommendation.call_embedding_api",
             return_value=[0.01, 0.02],
         ) as mock_embed, patch(
             "indicators.services.recommendation.get_milvus_manager"

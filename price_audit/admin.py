@@ -10,6 +10,7 @@ from django.urls import path, reverse
 from price_audit.forms import GovernmentPriceImportForm
 from price_audit.models import GovernmentPriceBatch, GovernmentPriceItem
 from price_audit.services import government_price_service
+from price_audit.tasks import dispatch_vectorize_government_price_batch
 
 
 class GovernmentPriceItemInline(admin.TabularInline):
@@ -45,14 +46,19 @@ class GovernmentPriceBatchAdmin(admin.ModelAdmin):
         "region_name",
         "year",
         "is_active",
+        "vector_status",
+        "vector_progress",
         "total_rows",
         "success_rows",
+        "vector_success",
+        "vector_failed",
         "uploaded_by",
         "created_at",
         "source_filename",
     )
-    list_filter = ("region_name", "year", "is_active")
+    list_filter = ("region_name", "year", "is_active", "vector_status")
     search_fields = ("region_name", "source_filename", "remark")
+    actions = ("requeue_vectorization",)
     readonly_fields = (
         "region_name",
         "year",
@@ -63,6 +69,15 @@ class GovernmentPriceBatchAdmin(admin.ModelAdmin):
         "replaced_batch",
         "total_rows",
         "success_rows",
+        "vector_status",
+        "vector_task_id",
+        "vector_queued_at",
+        "vector_started_at",
+        "vector_total",
+        "vector_success",
+        "vector_failed",
+        "vectorized_at",
+        "last_error",
         "remark",
         "template_version",
         "deactivated_at",
@@ -93,6 +108,12 @@ class GovernmentPriceBatchAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    @admin.display(description="向量进度")
+    def vector_progress(self, obj):
+        """展示标准价向量化当前进度。"""
+
+        return f"{obj.vector_success + obj.vector_failed}/{obj.vector_total}"
 
     def download_template_view(self, request):
         """下载政府标准价导入模板。"""
@@ -139,18 +160,19 @@ class GovernmentPriceBatchAdmin(admin.ModelAdmin):
                     messages.error(request, f"导入失败：{exc}")
                     return redirect(changelist_url)
 
-                replaced_text = (
-                    f"，覆盖旧批次 {result.replaced_batches} 个"
-                    if result.replaced_batches
-                    else ""
-                )
                 messages.success(
                     request,
                     (
-                        f"导入完成：新增批次 #{result.batch.id}，解析 {result.parsed_rows} 行，"
-                        f"入库 {result.created_rows} 行{replaced_text}。"
+                        f"导入完成：同步批次 #{result.batch.id}，解析 {result.parsed_rows} 行，"
+                        f"新增 {result.created_rows} 行，更新 {result.updated_rows} 行，"
+                        f"删除 {result.deleted_rows} 行。"
                     ),
                 )
+                if result.vector_task_dispatched:
+                    messages.info(
+                        request,
+                        "已提交标准价向量化任务。请确保 Celery worker 已启动，批次状态会自动更新。",
+                    )
                 return redirect(changelist_url)
         else:
             form = GovernmentPriceImportForm()
@@ -182,6 +204,19 @@ class GovernmentPriceBatchAdmin(admin.ModelAdmin):
         )
         return super().changelist_view(request, extra_context=extra_context)
 
+    @admin.action(description="重新提交向量化任务")
+    def requeue_vectorization(self, request, queryset):
+        """对选中的批次重新提交 Celery 向量化任务。"""
+
+        selected = list(queryset)
+        for batch in selected:
+            dispatch_vectorize_government_price_batch(batch.id)
+        self.message_user(
+            request,
+            f"已重新提交 {len(selected)} 个批次的向量化任务。",
+            level=messages.SUCCESS,
+        )
+
 
 @admin.register(GovernmentPriceItem)
 class GovernmentPriceItemAdmin(admin.ModelAdmin):
@@ -198,6 +233,7 @@ class GovernmentPriceItemAdmin(admin.ModelAdmin):
         "price_min",
         "price_max",
         "is_tax_included",
+        "is_vectorized",
         "batch",
     )
     list_filter = ("batch__region_name", "batch__year", "batch__is_active", "is_tax_included")
@@ -218,6 +254,8 @@ class GovernmentPriceItemAdmin(admin.ModelAdmin):
         "price_max",
         "description",
         "is_tax_included",
+        "embedding_text",
+        "is_vectorized",
         "raw_row_data",
         "created_at",
     )

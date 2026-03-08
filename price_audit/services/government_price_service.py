@@ -12,7 +12,9 @@ from django.utils import timezone
 from openpyxl import Workbook, load_workbook
 
 from price_audit.models import GovernmentPriceBatch, GovernmentPriceItem
+from price_audit.tasks import dispatch_vectorize_government_price_batch
 from price_audit.services.normalization import (
+    build_embedding_text,
     normalize_tax_flag,
     normalize_text,
     normalize_text_no_space,
@@ -71,7 +73,9 @@ class GovernmentPriceImportResult:
     batch: GovernmentPriceBatch
     parsed_rows: int
     created_rows: int
-    replaced_batches: int
+    updated_rows: int
+    deleted_rows: int
+    vector_task_dispatched: bool
 
 
 class GovernmentPriceService:
@@ -236,7 +240,7 @@ class GovernmentPriceService:
     ) -> GovernmentPriceImportResult:
         """
         功能说明:
-            导入一份政府标准价 Excel，创建新批次与明细，并使同地区同年份旧批次失效。
+            导入一份政府标准价 Excel，并在同地区同年份的当前批次上执行增量同步。
         使用示例:
             result = government_price_service.import_excel(
                 uploaded_file,
@@ -252,7 +256,7 @@ class GovernmentPriceService:
             remark: 后台备注。
             default_tax_included: 当表格缺少“是否含税”列时是否默认按含税处理。
         输出参数:
-            GovernmentPriceImportResult: 导入后的批次信息、行数和覆盖摘要。
+            GovernmentPriceImportResult: 导入后的批次信息，以及新增/更新/删除摘要。
         """
 
         region_name = normalize_text(region_name)
@@ -265,31 +269,83 @@ class GovernmentPriceService:
             uploaded_file,
             default_tax_included=default_tax_included,
         )
+        excel_row_map = {self._build_row_key_from_row(row): row for row in parsed_rows}
+        if not excel_row_map:
+            raise ValueError("Excel 中未解析到有效政府标准价数据。")
 
         with transaction.atomic():
-            active_batches = list(
+            existing_batches = list(
                 GovernmentPriceBatch.objects.select_for_update()
-                .filter(region_name=region_name, year=year, is_active=True)
-                .order_by("-created_at")
+                .filter(region_name=region_name, year=year)
+                .order_by("-is_active", "-created_at")
             )
-            replaced_count = len(active_batches)
-            replaced_batch = active_batches[0] if active_batches else None
-            if active_batches:
-                now = timezone.now()
-                GovernmentPriceBatch.objects.filter(
-                    id__in=[batch.id for batch in active_batches]
-                ).update(is_active=False, deactivated_at=now)
+            batch = existing_batches[0] if existing_batches else None
+            extra_batch_ids = [item.id for item in existing_batches[1:]]
+            if extra_batch_ids:
+                GovernmentPriceBatch.objects.filter(id__in=extra_batch_ids).update(
+                    is_active=False,
+                    deactivated_at=timezone.now(),
+                )
 
-            batch = GovernmentPriceBatch.objects.create(
-                region_name=region_name,
-                year=year,
-                source_filename=uploaded_file.name or "",
-                uploaded_by=uploaded_by,
-                replaced_batch=replaced_batch,
-                total_rows=len(parsed_rows),
-                success_rows=len(parsed_rows),
-                remark=normalize_text(remark),
-            )
+            if batch is None:
+                batch = GovernmentPriceBatch.objects.create(
+                    region_name=region_name,
+                    year=year,
+                    source_filename=uploaded_file.name or "",
+                    uploaded_by=uploaded_by,
+                    total_rows=len(parsed_rows),
+                    success_rows=len(parsed_rows),
+                    vector_status=GovernmentPriceBatch.VectorStatus.PENDING,
+                    vector_total=0,
+                    vector_success=0,
+                    vector_failed=0,
+                    last_error="",
+                    remark=normalize_text(remark),
+                    is_active=True,
+                    deactivated_at=None,
+                )
+            else:
+                batch.region_name = region_name
+                batch.year = year
+                batch.source_filename = uploaded_file.name or ""
+                batch.uploaded_by = uploaded_by
+                batch.total_rows = len(parsed_rows)
+                batch.success_rows = len(parsed_rows)
+                batch.vector_status = GovernmentPriceBatch.VectorStatus.PENDING
+                batch.vector_total = 0
+                batch.vector_success = 0
+                batch.vector_failed = 0
+                batch.vector_task_id = ""
+                batch.vector_queued_at = None
+                batch.vector_started_at = None
+                batch.vectorized_at = None
+                batch.last_error = ""
+                batch.remark = normalize_text(remark)
+                batch.is_active = True
+                batch.deactivated_at = None
+                batch.save(
+                    update_fields=[
+                        "region_name",
+                        "year",
+                        "source_filename",
+                        "uploaded_by",
+                        "total_rows",
+                        "success_rows",
+                        "vector_status",
+                        "vector_total",
+                        "vector_success",
+                        "vector_failed",
+                        "vector_task_id",
+                        "vector_queued_at",
+                        "vector_started_at",
+                        "vectorized_at",
+                        "last_error",
+                        "remark",
+                        "is_active",
+                        "deactivated_at",
+                        "updated_at",
+                    ]
+                )
             uploaded_file.seek(0)
             batch.source_file.save(
                 uploaded_file.name,
@@ -298,8 +354,28 @@ class GovernmentPriceService:
             )
             batch.save(update_fields=["source_file"])
 
-            GovernmentPriceItem.objects.bulk_create(
-                [
+            existing_items = list(batch.items.all())
+            existing_item_map = {
+                self._build_row_key_from_item(item): item for item in existing_items
+            }
+            excel_keys = set(excel_row_map.keys())
+            existing_keys = set(existing_item_map.keys())
+
+            keys_to_create = excel_keys - existing_keys
+            keys_to_delete = existing_keys - excel_keys
+            keys_to_check = excel_keys & existing_keys
+
+            created_items = []
+            updated_items = []
+            deleted_item_ids = [existing_item_map[key].id for key in keys_to_delete]
+
+            if deleted_item_ids:
+                GovernmentPriceItem.objects.filter(id__in=deleted_item_ids).delete()
+
+            for key in keys_to_create:
+                row = excel_row_map[key]
+                embedding_text = self._build_embedding_text_from_row(row)
+                created_items.append(
                     GovernmentPriceItem(
                         batch=batch,
                         row_no=row.row_no,
@@ -314,18 +390,117 @@ class GovernmentPriceService:
                         price_max=row.price_max,
                         description=row.description,
                         is_tax_included=row.is_tax_included,
-                        raw_row_data=row.raw_row_data,
+                        embedding_text=embedding_text,
+                        is_vectorized=False,
+                        raw_row_data={
+                            **row.raw_row_data,
+                            "embedding_text": embedding_text,
+                        },
                     )
-                    for row in parsed_rows
-                ],
-                batch_size=500,
+                )
+
+            for key in keys_to_check:
+                item = existing_item_map[key]
+                row = excel_row_map[key]
+                old_embedding_text = item.embedding_text
+                new_embedding_text = self._build_embedding_text_from_row(row)
+                should_update = False
+
+                updated_fields = {
+                    "row_no": row.row_no,
+                    "material_name_raw": row.material_name_raw,
+                    "material_name_normalized": row.material_name_normalized,
+                    "spec_model_raw": row.spec_model_raw,
+                    "spec_model_normalized": row.spec_model_normalized,
+                    "unit_raw": row.unit_raw,
+                    "unit_normalized": row.unit_normalized,
+                    "benchmark_price": row.benchmark_price,
+                    "price_min": row.price_min,
+                    "price_max": row.price_max,
+                    "description": row.description,
+                    "is_tax_included": row.is_tax_included,
+                    "embedding_text": new_embedding_text,
+                    "raw_row_data": {
+                        **row.raw_row_data,
+                        "embedding_text": new_embedding_text,
+                    },
+                }
+                for field_name, new_value in updated_fields.items():
+                    if getattr(item, field_name) != new_value:
+                        setattr(item, field_name, new_value)
+                        should_update = True
+
+                if should_update:
+                    if old_embedding_text != new_embedding_text:
+                        item.is_vectorized = False
+                    updated_items.append(item)
+
+            if created_items:
+                GovernmentPriceItem.objects.bulk_create(created_items, batch_size=500)
+
+            if updated_items:
+                GovernmentPriceItem.objects.bulk_update(
+                    updated_items,
+                    [
+                        "row_no",
+                        "material_name_raw",
+                        "material_name_normalized",
+                        "spec_model_raw",
+                        "spec_model_normalized",
+                        "unit_raw",
+                        "unit_normalized",
+                        "benchmark_price",
+                        "price_min",
+                        "price_max",
+                        "description",
+                        "is_tax_included",
+                        "embedding_text",
+                        "is_vectorized",
+                        "raw_row_data",
+                    ],
+                    batch_size=500,
+                )
+
+            needs_vector_sync = bool(
+                deleted_item_ids
+                or batch.items.filter(is_vectorized=False).exists()
             )
+            if needs_vector_sync:
+                transaction.on_commit(
+                    lambda: dispatch_vectorize_government_price_batch(batch.id, deleted_item_ids)
+                )
+            else:
+                batch.vector_status = GovernmentPriceBatch.VectorStatus.ACTIVE
+                batch.vector_total = 0
+                batch.vector_success = 0
+                batch.vector_failed = 0
+                batch.vector_task_id = ""
+                batch.vector_queued_at = None
+                batch.vector_started_at = None
+                batch.vectorized_at = timezone.now()
+                batch.last_error = ""
+                batch.save(
+                    update_fields=[
+                        "vector_status",
+                        "vector_total",
+                        "vector_success",
+                        "vector_failed",
+                        "vector_task_id",
+                        "vector_queued_at",
+                        "vector_started_at",
+                        "vectorized_at",
+                        "last_error",
+                        "updated_at",
+                    ]
+                )
 
         return GovernmentPriceImportResult(
             batch=batch,
             parsed_rows=len(parsed_rows),
-            created_rows=len(parsed_rows),
-            replaced_batches=replaced_count,
+            created_rows=len(created_items),
+            updated_rows=len(updated_items),
+            deleted_rows=len(deleted_item_ids),
+            vector_task_dispatched=needs_vector_sync,
         )
 
     def _read_workbook(self, uploaded_file):
@@ -398,6 +573,33 @@ class GovernmentPriceService:
             worksheet.cell(row=row_no, column=header_index["price_high"]).value
         ) if header_index.get("price_high") else None
         return low, high
+
+    def _build_embedding_text_from_row(self, row: ParsedGovernmentPriceRow) -> str:
+        """根据一条标准价行构造用于向量检索的文本。"""
+
+        return build_embedding_text(
+            material_name=row.material_name_normalized,
+            spec_model=row.spec_model_raw,
+            unit=row.unit_raw,
+        )
+
+    def _build_row_key_from_row(self, row: ParsedGovernmentPriceRow) -> tuple[str, str, str]:
+        """构造 Excel 行的业务唯一键。"""
+
+        return (
+            row.material_name_normalized,
+            row.spec_model_normalized,
+            row.unit_normalized,
+        )
+
+    def _build_row_key_from_item(self, item: GovernmentPriceItem) -> tuple[str, str, str]:
+        """构造数据库明细行的业务唯一键。"""
+
+        return (
+            item.material_name_normalized,
+            item.spec_model_normalized,
+            item.unit_normalized,
+        )
 
 
 government_price_service = GovernmentPriceService()

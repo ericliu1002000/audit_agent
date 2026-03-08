@@ -32,7 +32,6 @@ class MilvusIndicatorManager:
         self.alias = "indicator_milvus"
 
         self._connect()
-        self.ensure_collection()
 
     def _connect(self) -> None:
         if connections.has_connection(self.alias):
@@ -85,7 +84,9 @@ class MilvusIndicatorManager:
             "metric_type": "IP",
             "params": {"nlist": 1024},
         }
-        collection.create_index("embedding", index_params)
+        existing_indexes = collection.indexes
+        if not existing_indexes:
+            collection.create_index("embedding", index_params)
 
     def get_collection(self) -> Collection:
         """获取集合对象."""

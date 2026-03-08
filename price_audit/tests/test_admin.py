@@ -1,8 +1,10 @@
 """价格审核 admin 交互测试。"""
 
 from io import BytesIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -83,17 +85,21 @@ class GovernmentPriceAdminTests(TestCase):
     def test_import_view_creates_batch(self):
         """后台上传 Excel 后应创建新批次。"""
 
-        response = self.client.post(
-            self.import_url,
-            data={
-                "excel_file": build_workbook_file(),
-                "region_name": "天津",
-                "year": 2026,
-                "default_tax_included": "on",
-                "remark": "测试导入",
-            },
-            follow=True,
-        )
+        with patch(
+            "price_audit.services.government_price_service.dispatch_vectorize_government_price_batch"
+        ) as dispatch_mock:
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.client.post(
+                    self.import_url,
+                    data={
+                        "excel_file": build_workbook_file(),
+                        "region_name": "天津",
+                        "year": 2026,
+                        "default_tax_included": "on",
+                        "remark": "测试导入",
+                    },
+                    follow=True,
+                )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(GovernmentPriceBatch.objects.count(), 1)
@@ -101,3 +107,70 @@ class GovernmentPriceAdminTests(TestCase):
         self.assertEqual(batch.region_name, "天津")
         self.assertEqual(batch.year, 2026)
         self.assertEqual(batch.total_rows, 1)
+        self.assertEqual(batch.vector_status, GovernmentPriceBatch.VectorStatus.PENDING)
+        dispatch_mock.assert_called_once_with(batch.id, [])
+
+    def test_import_view_rejects_non_xlsx_file(self):
+        """上传非 xlsx 文件时应停留在表单页并展示错误。"""
+
+        invalid_file = SimpleUploadedFile("invalid.csv", b"a,b,c\n", content_type="text/csv")
+
+        response = self.client.post(
+            self.import_url,
+            data={
+                "excel_file": invalid_file,
+                "region_name": "天津",
+                "year": 2026,
+                "default_tax_included": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "仅支持上传 .xlsx 格式文件")
+        self.assertEqual(GovernmentPriceBatch.objects.count(), 0)
+
+    def test_import_view_shows_value_error_message(self):
+        """service 抛出 ValueError 时应回到列表页并展示业务错误。"""
+
+        with patch(
+            "price_audit.admin.government_price_service.import_excel",
+            side_effect=ValueError("业务校验失败"),
+        ):
+            response = self.client.post(
+                self.import_url,
+                data={
+                    "excel_file": build_workbook_file(),
+                    "region_name": "天津",
+                    "year": 2026,
+                    "default_tax_included": "on",
+                },
+                follow=True,
+            )
+
+        messages = [message.message for message in get_messages(response.wsgi_request)]
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any("导入失败：业务校验失败" in message for message in messages))
+        self.assertEqual(GovernmentPriceBatch.objects.count(), 0)
+
+    def test_import_view_shows_generic_error_message(self):
+        """service 抛出非业务异常时也应展示错误提示。"""
+
+        with patch(
+            "price_audit.admin.government_price_service.import_excel",
+            side_effect=RuntimeError("系统异常"),
+        ):
+            response = self.client.post(
+                self.import_url,
+                data={
+                    "excel_file": build_workbook_file(),
+                    "region_name": "天津",
+                    "year": 2026,
+                    "default_tax_included": "on",
+                },
+                follow=True,
+            )
+
+        messages = [message.message for message in get_messages(response.wsgi_request)]
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any("导入失败：系统异常" in message for message in messages))
+        self.assertEqual(GovernmentPriceBatch.objects.count(), 0)

@@ -31,7 +31,7 @@ class VectorTasksUnitTests(unittest.TestCase):
 
         with patch.object(
             vector_tasks, "settings", SimpleNamespace(MILVUS_EMBED_DIM=2)
-        ), patch.object(vector_tasks, "call_begm3_api") as mock_embed, patch.object(
+        ), patch.object(vector_tasks, "call_embedding_api") as mock_embed, patch.object(
             vector_tasks, "Indicator"
         ) as mock_indicator_model:
             vector_tasks._vectorize_indicator(indicator, manager)
@@ -58,7 +58,7 @@ class VectorTasksUnitTests(unittest.TestCase):
         with patch.object(
             vector_tasks, "settings", SimpleNamespace(MILVUS_EMBED_DIM=2)
         ), patch.object(
-            vector_tasks, "call_begm3_api", return_value=[0.3, 0.4]
+            vector_tasks, "call_embedding_api", return_value=[0.3, 0.4]
         ) as mock_embed, patch.object(vector_tasks, "Indicator"):
             vector_tasks._vectorize_indicator(indicator, manager)
 
@@ -80,7 +80,7 @@ class VectorTasksUnitTests(unittest.TestCase):
         with patch.object(
             vector_tasks, "settings", SimpleNamespace(MILVUS_EMBED_DIM=3)
         ), patch.object(
-            vector_tasks, "call_begm3_api", return_value=[0.3, 0.4]
+            vector_tasks, "call_embedding_api", return_value=[0.3, 0.4]
         ), patch.object(vector_tasks, "Indicator"):
             with self.assertRaises(ValueError) as ctx:
                 vector_tasks._vectorize_indicator(indicator, manager)

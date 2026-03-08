@@ -56,6 +56,8 @@ class GovernmentPriceItem(models.Model):
     )
     description = models.TextField("说明", blank=True)
     is_tax_included = models.BooleanField("是否含税", default=True)
+    embedding_text = models.CharField("向量文本", max_length=1024, blank=True)
+    is_vectorized = models.BooleanField("是否已向量化", default=False, db_index=True)
     raw_row_data = models.JSONField("原始行数据", default=dict, blank=True)
     created_at = models.DateTimeField("创建时间", auto_now_add=True)
 

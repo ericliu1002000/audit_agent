@@ -6,9 +6,9 @@ from typing import List
 from celery import shared_task
 from django.conf import settings
 
-from utils.vector_api import call_begm3_api
 from indicators.models import Indicator
 from indicators.vector_utils import get_milvus_manager
+from utils.vector_api import call_embedding_api
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def _vectorize_indicator(indicator: Indicator, manager) -> None:
 
     步骤：
     1. 调用 Indicator.combo_text() 构建向量化文本。
-    2. 请求 BEGM3 嵌入服务，拿到 1024 维向量。
+    2. 请求硅基流动嵌入服务，拿到 1024 维向量。
     3. 调用 Milvus manager upsert，写入向量。
     4. DB 中将 is_vectorized 标记为 True。
     """
@@ -31,7 +31,7 @@ def _vectorize_indicator(indicator: Indicator, manager) -> None:
         vector = None
 
     if not vector:
-        vector = call_begm3_api(combo_text)
+        vector = call_embedding_api(combo_text)
 
     expected_dim = int(getattr(settings, "MILVUS_EMBED_DIM", len(vector)))
     if len(vector) != expected_dim:

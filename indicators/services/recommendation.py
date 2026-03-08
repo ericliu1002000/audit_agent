@@ -12,7 +12,7 @@ from django.conf import settings
 
 from indicators.models import FundUsage, Indicator
 from indicators.vector_utils import get_milvus_manager
-from utils.vector_api import call_begm3_api
+from utils.vector_api import call_embedding_api
 
 TOP_K_INDICATORS = 200
 SCORE_THRESHOLD = 0.5
@@ -26,8 +26,7 @@ def get_fund_usage_recommendations(user_query: str, province_id: int | None = No
     if not user_query:
         return []
 
-    query_vector = call_begm3_api(user_query)
-    print("已向量化完成")
+    query_vector = call_embedding_api(user_query)
     manager = get_milvus_manager()
     search_results = manager.search_similar_indicators(
         query_vector,

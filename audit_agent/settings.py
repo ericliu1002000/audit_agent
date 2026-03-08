@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'user',
     'indicators',
     'indicator_audit',
+    'price_audit',
     'regions',
     'budget_audit',
 ]

@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{{ import_prices_url }}">上传政府标准价</a>
+  </li>
+  <li>
+    <a href="{{ download_template_url }}">下载导入模板</a>
+  </li>
+  {{ block.super }}
+{% endblock %}

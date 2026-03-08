@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <h2>导入政府标准价</h2>
+  <p>先下载系统模板整理数据，再在此上传。系统会按“同地区 + 同年份”整批覆盖旧数据。</p>
+  <p>说明：中准价格必填；区间最低价和区间最高价可留空，有就用，没有就不用。</p>
+  <p>
+    <a class="button" href="{{ template_download_url }}">下载模板</a>
+  </p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-row">
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}
+            <p class="help">{{ field.help_text }}</p>
+          {% endif %}
+          {% if field.errors %}
+            <ul class="errorlist">
+              {% for error in field.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+    <div class="submit-row">
+      <input type="submit" class="default" value="开始导入">
+      <a href="{% url 'admin:price_audit_governmentpricebatch_changelist' %}" class="button cancel-link">返回列表</a>
+    </div>
+  </form>
+{% endblock %}

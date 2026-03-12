@@ -9,6 +9,12 @@ from api.v1.views.auth import (
     AuthLogoutView,
     AuthMeView,
 )
+from api.v1.views.price_audit import (
+    PriceAuditSubmissionAuditedExcelDownloadView,
+    PriceAuditSubmissionCreateView,
+    PriceAuditSubmissionDetailView,
+    PriceAuditSubmissionRowsView,
+)
 
 app_name = "api_v1"
 
@@ -22,5 +28,25 @@ urlpatterns = [
         "auth/change-password/",
         AuthChangePasswordView.as_view(),
         name="auth-change-password",
+    ),
+    path(
+        "price-audit/submissions/",
+        PriceAuditSubmissionCreateView.as_view(),
+        name="price-audit-submission-create",
+    ),
+    path(
+        "price-audit/submissions/<int:submission_id>/",
+        PriceAuditSubmissionDetailView.as_view(),
+        name="price-audit-submission-detail",
+    ),
+    path(
+        "price-audit/submissions/<int:submission_id>/rows/",
+        PriceAuditSubmissionRowsView.as_view(),
+        name="price-audit-submission-rows",
+    ),
+    path(
+        "price-audit/submissions/<int:submission_id>/download/audited-excel/",
+        PriceAuditSubmissionAuditedExcelDownloadView.as_view(),
+        name="price-audit-submission-download-audited-excel",
     ),
 ]

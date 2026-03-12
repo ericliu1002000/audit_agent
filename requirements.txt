@@ -20,3 +20,5 @@ openai==1.55.3
 httpx[socks]
 markdown==3.7
 xhtml2pdf==0.2.15
+llama-index
+llama-index-llms-deepseek

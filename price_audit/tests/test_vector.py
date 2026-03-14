@@ -12,6 +12,7 @@ from price_audit.tasks import (
     dispatch_vectorize_government_price_batch,
     vectorize_government_price_batch,
 )
+from price_audit.vector_store import PriceAuditMilvusManager
 
 
 class EnsureVectorCollectionsCommandTests(TestCase):
@@ -29,6 +30,20 @@ class EnsureVectorCollectionsCommandTests(TestCase):
 
         indicator_manager.ensure_collection.assert_called_once_with()
         price_manager.ensure_collection.assert_called_once_with()
+
+
+class PriceAuditMilvusManagerTests(TestCase):
+    @patch("price_audit.vector_store.Collection")
+    def test_get_collection_does_not_auto_ensure_collection(self, collection_cls):
+        manager = PriceAuditMilvusManager.__new__(PriceAuditMilvusManager)
+        manager.collection_name = "price_vectors"
+        manager.alias = "price_audit_milvus"
+        manager.ensure_collection = Mock()
+
+        PriceAuditMilvusManager.get_collection(manager)
+
+        manager.ensure_collection.assert_not_called()
+        collection_cls.assert_called_once_with("price_vectors", using="price_audit_milvus")
 
 
 class DispatchVectorizationTaskTests(TestCase):

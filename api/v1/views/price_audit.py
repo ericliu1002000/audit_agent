@@ -55,6 +55,8 @@ class PriceAuditSubmissionCreateView(APIView):
             submission = create_submission_from_upload(
                 serializer.validated_data["file"],
                 created_by=request.user,
+                exhibition_center_id=serializer.validated_data["exhibition_center_id"],
+                project_nature=serializer.validated_data["project_nature"],
             )
         except ValueError as exc:
             return error_response(

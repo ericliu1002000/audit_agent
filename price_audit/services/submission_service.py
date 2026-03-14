@@ -26,7 +26,13 @@ def get_default_price_batch() -> GovernmentPriceBatch:
     return batch
 
 
-def create_submission_from_upload(uploaded_file, *, created_by=None) -> PriceAuditSubmission:
+def create_submission_from_upload(
+    uploaded_file,
+    *,
+    created_by=None,
+    exhibition_center_id: int,
+    project_nature: int,
+) -> PriceAuditSubmission:
     """创建送审单并提交异步审核任务。"""
 
     filename = (uploaded_file.name or "").strip()
@@ -40,6 +46,8 @@ def create_submission_from_upload(uploaded_file, *, created_by=None) -> PriceAud
         price_batch=batch,
         original_filename=filename,
         project_name=project_name,
+        exhibition_center_id=exhibition_center_id,
+        project_nature=project_nature,
         current_step=PriceAuditSubmission.Step.QUEUED,
         progress_percent=0,
         total_rows=0,

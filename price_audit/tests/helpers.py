@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from openpyxl import Workbook
 
+from price_audit.constants import EXHIBITION_CENTER_MEIJIANG, PROJECT_NATURE_TEMPORARY
 from price_audit.models import PriceAuditRowDecision, PriceAuditSubmission, PriceAuditSubmissionRow
 
 
@@ -115,6 +116,8 @@ def create_submission_with_workbook(
     workbook: SimpleUploadedFile | None = None,
     original_filename: str = "submission.xlsx",
     project_name: str = "submission",
+    exhibition_center_id: int = EXHIBITION_CENTER_MEIJIANG,
+    project_nature: int = PROJECT_NATURE_TEMPORARY,
     status: str = PriceAuditSubmission.Status.PENDING,
 ) -> PriceAuditSubmission:
     """创建一条带源文件的送审单。"""
@@ -124,6 +127,8 @@ def create_submission_with_workbook(
         price_batch=price_batch,
         original_filename=original_filename,
         project_name=project_name,
+        exhibition_center_id=exhibition_center_id,
+        project_nature=project_nature,
         status=status,
     )
     uploaded_file = workbook or build_price_audit_submission_workbook(filename=original_filename)

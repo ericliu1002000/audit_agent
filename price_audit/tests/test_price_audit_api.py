@@ -9,6 +9,7 @@ from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.urls import reverse
 
+from price_audit.constants import EXHIBITION_CENTER_NEC, PROJECT_NATURE_PERMANENT
 from price_audit.models import GovernmentPriceBatch, PriceAuditSubmission
 from price_audit.tests.helpers import (
     TempMediaRootMixin,
@@ -102,7 +103,11 @@ class PriceAuditApiTests(TempMediaRootMixin, TestCase):
         with self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(
                 self.create_url,
-                data={"file": build_price_audit_submission_workbook()},
+                data={
+                    "file": build_price_audit_submission_workbook(),
+                    "exhibition_center_id": EXHIBITION_CENTER_NEC,
+                    "project_nature": PROJECT_NATURE_PERMANENT,
+                },
             )
 
         self.assertEqual(response.status_code, 202)
@@ -114,10 +119,16 @@ class PriceAuditApiTests(TempMediaRootMixin, TestCase):
         self.assertEqual(payload["data"]["total_rows"], 0)
         self.assertEqual(payload["data"]["processed_rows"], 0)
         self.assertEqual(payload["data"]["failed_rows"], 0)
+        self.assertEqual(payload["data"]["exhibition_center_id"], EXHIBITION_CENTER_NEC)
+        self.assertEqual(payload["data"]["exhibition_center_name"], "天津国家会展中心")
+        self.assertEqual(payload["data"]["project_nature"], PROJECT_NATURE_PERMANENT)
+        self.assertEqual(payload["data"]["project_nature_name"], "常设陈列")
         self.assertIn("/api/v1/price-audit/submissions/", payload["data"]["detail_url"])
         self.assertIn("/rows/", payload["data"]["rows_url"])
         submission = PriceAuditSubmission.objects.get()
         self.assertEqual(submission.created_by, self.user)
+        self.assertEqual(submission.exhibition_center_id, EXHIBITION_CENTER_NEC)
+        self.assertEqual(submission.project_nature, PROJECT_NATURE_PERMANENT)
         dispatch_mock.assert_called_once_with(submission.id)
 
     def test_create_submission_returns_validation_error_when_file_is_missing(self):
@@ -130,19 +141,44 @@ class PriceAuditApiTests(TempMediaRootMixin, TestCase):
         self.assertFalse(payload["success"])
         self.assertEqual(payload["error"]["code"], "validation_error")
         self.assertIn("file", payload["error"]["fields"])
+        self.assertIn("exhibition_center_id", payload["error"]["fields"])
+        self.assertIn("project_nature", payload["error"]["fields"])
 
     def test_create_submission_rejects_non_xlsx(self):
         """上传非 xlsx 文件应返回校验错误。"""
 
         response = self.client.post(
             self.create_url,
-            data={"file": ContentFile(b"bad", name="bad.csv")},
+            data={
+                "file": ContentFile(b"bad", name="bad.csv"),
+                "exhibition_center_id": EXHIBITION_CENTER_NEC,
+                "project_nature": PROJECT_NATURE_PERMANENT,
+            },
         )
 
         self.assertEqual(response.status_code, 400)
         payload = response.json()
         self.assertFalse(payload["success"])
         self.assertEqual(payload["error"]["code"], "validation_error")
+
+    def test_create_submission_rejects_invalid_scene_values(self):
+        """非法会展中心或项目性质应返回校验错误。"""
+
+        response = self.client.post(
+            self.create_url,
+            data={
+                "file": build_price_audit_submission_workbook(),
+                "exhibition_center_id": 99,
+                "project_nature": 88,
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        payload = response.json()
+        self.assertFalse(payload["success"])
+        self.assertEqual(payload["error"]["code"], "validation_error")
+        self.assertIn("exhibition_center_id", payload["error"]["fields"])
+        self.assertIn("project_nature", payload["error"]["fields"])
 
     @patch("api.v1.views.price_audit.create_submission_from_upload")
     def test_create_submission_returns_service_validation_error(self, create_mock):
@@ -152,7 +188,11 @@ class PriceAuditApiTests(TempMediaRootMixin, TestCase):
 
         response = self.client.post(
             self.create_url,
-            data={"file": build_price_audit_submission_workbook()},
+            data={
+                "file": build_price_audit_submission_workbook(),
+                "exhibition_center_id": EXHIBITION_CENTER_NEC,
+                "project_nature": PROJECT_NATURE_PERMANENT,
+            },
         )
 
         self.assertEqual(response.status_code, 400)
@@ -185,6 +225,10 @@ class PriceAuditApiTests(TempMediaRootMixin, TestCase):
         self.assertEqual(payload["data"]["progress_percent"], 100)
         self.assertEqual(payload["data"]["processed_rows"], 2)
         self.assertEqual(payload["data"]["failed_rows"], 0)
+        self.assertEqual(payload["data"]["exhibition_center_id"], submission.exhibition_center_id)
+        self.assertEqual(payload["data"]["exhibition_center_name"], "天津梅江会展中心")
+        self.assertEqual(payload["data"]["project_nature"], submission.project_nature)
+        self.assertEqual(payload["data"]["project_nature_name"], "临时展会")
         self.assertIn("/api/v1/price-audit/submissions/", payload["data"]["detail_url"])
         self.assertIn("/rows/", payload["data"]["rows_url"])
         self.assertIn("/api/v1/price-audit/submissions/", payload["data"]["audited_excel_download_url"])
@@ -312,7 +356,15 @@ class PriceAuditApiTests(TempMediaRootMixin, TestCase):
         self.client.logout()
 
         endpoints = [
-            ("post", self.create_url, {"file": build_price_audit_submission_workbook()}),
+            (
+                "post",
+                self.create_url,
+                {
+                    "file": build_price_audit_submission_workbook(),
+                    "exhibition_center_id": EXHIBITION_CENTER_NEC,
+                    "project_nature": PROJECT_NATURE_PERMANENT,
+                },
+            ),
             (
                 "get",
                 reverse("api:v1:price-audit-submission-detail", kwargs={"submission_id": submission.id}),

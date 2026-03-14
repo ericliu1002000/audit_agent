@@ -30,6 +30,7 @@ class MilvusIndicatorManager:
         self.collection_name = getattr(settings, "MILVUS_COLLECTION", "indicator_vectors")
         self.embedding_dim = int(getattr(settings, "MILVUS_EMBED_DIM", 1024))
         self.alias = "indicator_milvus"
+        self._collection_ready = False
 
         self._connect()
 
@@ -47,6 +48,9 @@ class MilvusIndicatorManager:
 
     def ensure_collection(self) -> None:
         """确保集合存在，若不存在则创建."""
+
+        if self._collection_ready:
+            return
 
         if not utility.has_collection(self.collection_name, using=self.alias):
             fields = [
@@ -71,12 +75,15 @@ class MilvusIndicatorManager:
                 ),
             ]
             schema = CollectionSchema(fields, description="Indicator vector store")
-            # 在 2.x 版本中通过构造 Collection 来创建集合
-            Collection(
-                name=self.collection_name,
-                schema=schema,
-                using=self.alias,
-            )
+            try:
+                Collection(
+                    name=self.collection_name,
+                    schema=schema,
+                    using=self.alias,
+                )
+            except Exception:
+                if not utility.has_collection(self.collection_name, using=self.alias):
+                    raise
 
         collection = Collection(self.collection_name, using=self.alias)
         index_params = {
@@ -86,7 +93,14 @@ class MilvusIndicatorManager:
         }
         existing_indexes = collection.indexes
         if not existing_indexes:
-            collection.create_index("embedding", index_params)
+            try:
+                collection.create_index("embedding", index_params)
+            except Exception:
+                collection = Collection(self.collection_name, using=self.alias)
+                if not collection.indexes:
+                    raise
+
+        self._collection_ready = True
 
     def get_collection(self) -> Collection:
         """获取集合对象."""

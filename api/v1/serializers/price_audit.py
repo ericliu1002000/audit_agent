@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from price_audit.constants import EXHIBITION_CENTER_CHOICES, PROJECT_NATURE_CHOICES
 from price_audit.models import PriceAuditRowDecision, PriceAuditSubmission, PriceAuditSubmissionRow
 
 
@@ -11,6 +12,14 @@ class PriceAuditSubmissionCreateRequestSerializer(serializers.Serializer):
     """价格审核上传请求。"""
 
     file = serializers.FileField()
+    exhibition_center_id = serializers.ChoiceField(
+        choices=EXHIBITION_CENTER_CHOICES,
+        help_text="会展中心：0=天津梅江会展中心，1=天津国家会展中心。",
+    )
+    project_nature = serializers.ChoiceField(
+        choices=PROJECT_NATURE_CHOICES,
+        help_text="项目性质：0=临时展会，1=常设陈列。",
+    )
 
     def validate_file(self, value):
         filename = (value.name or "").lower()
@@ -66,6 +75,14 @@ class PriceAuditSubmissionRowItemSerializer(serializers.ModelSerializer):
 class PriceAuditSubmissionDataSerializer(serializers.ModelSerializer):
     """送审单详情序列化器。"""
 
+    exhibition_center_name = serializers.CharField(
+        source="get_exhibition_center_id_display",
+        read_only=True,
+    )
+    project_nature_name = serializers.CharField(
+        source="get_project_nature_display",
+        read_only=True,
+    )
     detail_url = serializers.SerializerMethodField()
     rows_url = serializers.SerializerMethodField()
     audited_excel_download_url = serializers.SerializerMethodField()
@@ -83,6 +100,10 @@ class PriceAuditSubmissionDataSerializer(serializers.ModelSerializer):
             "current_message",
             "project_name",
             "original_filename",
+            "exhibition_center_id",
+            "exhibition_center_name",
+            "project_nature",
+            "project_nature_name",
             "submitted_total_amount",
             "reviewed_total_amount",
             "reduction_total_amount",

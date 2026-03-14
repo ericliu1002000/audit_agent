@@ -7,6 +7,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
+from price_audit.constants import EXHIBITION_CENTER_NEC, PROJECT_NATURE_PERMANENT
 from price_audit.models import GovernmentPriceBatch, PriceAuditSubmission
 from price_audit.services.submission_service import (
     create_submission_from_upload,
@@ -77,11 +78,18 @@ class SubmissionServiceTests(TempMediaRootMixin, TestCase):
         uploaded_file = build_price_audit_submission_workbook(filename="示例项目.xlsx")
 
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
-            submission = create_submission_from_upload(uploaded_file, created_by=self.user)
+            submission = create_submission_from_upload(
+                uploaded_file,
+                created_by=self.user,
+                exhibition_center_id=EXHIBITION_CENTER_NEC,
+                project_nature=PROJECT_NATURE_PERMANENT,
+            )
 
         self.assertEqual(submission.created_by, self.user)
         self.assertEqual(submission.price_batch, batch)
         self.assertEqual(submission.project_name, "示例项目")
+        self.assertEqual(submission.exhibition_center_id, EXHIBITION_CENTER_NEC)
+        self.assertEqual(submission.project_nature, PROJECT_NATURE_PERMANENT)
         self.assertEqual(submission.status, PriceAuditSubmission.Status.PENDING)
         self.assertEqual(submission.current_step, PriceAuditSubmission.Step.QUEUED)
         self.assertEqual(submission.progress_percent, 0)
@@ -103,4 +111,6 @@ class SubmissionServiceTests(TempMediaRootMixin, TestCase):
             create_submission_from_upload(
                 build_price_audit_submission_workbook(filename="bad.csv"),
                 created_by=self.user,
+                exhibition_center_id=EXHIBITION_CENTER_NEC,
+                project_nature=PROJECT_NATURE_PERMANENT,
             )

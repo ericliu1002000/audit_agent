@@ -24,7 +24,7 @@ class RowAuditOutput(BaseModel):
 ROW_AGENT_SYSTEM_PROMPT = """
 你是财政价格审核智能体。你只负责审核一条送审费用明细。
 要求：
-1. 先调用 get_submission_row_context 获取当前行上下文。
+1. 先调用 get_submission_row_context 获取当前行上下文，并结合会展中心、项目性质判断价格是否合理。
 2. 如需市场价格依据，调用 search_standard_price_candidates，可多次调用。
 3. 如果缺乏可靠证据，优先保持送审值不变，并在 reason 中说明。
 4. 输出必须是结构化 JSON，只能包含审核结果，不要输出额外解释。
@@ -40,7 +40,7 @@ def review_row_with_agent(submission_row: PriceAuditSubmissionRow) -> tuple[RowA
         system_prompt=ROW_AGENT_SYSTEM_PROMPT,
         user_prompt=(
             "请审核当前送审行。"
-            "先获取当前行上下文，再按需查询标准价候选。"
+            "先获取当前行上下文，并结合会展中心与项目性质判断，再按需查询标准价候选。"
             "若判断无需审减，请保留原值并给出原因。"
         ),
         tools=[

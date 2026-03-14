@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from price_audit.agent.tools import PriceAuditToolCollector, PriceAuditToolset
+from price_audit.constants import EXHIBITION_CENTER_NEC, PROJECT_NATURE_PERMANENT
 from price_audit.models import GovernmentPriceBatch, GovernmentPriceItem
 from price_audit.tests.helpers import (
     TempMediaRootMixin,
@@ -64,7 +65,12 @@ class PriceAuditToolTests(TempMediaRootMixin, TestCase):
             embedding_text="材料名称:地台制作 | 规格型号:木结构 | 单位:m",
             raw_row_data={},
         )
-        self.submission = create_submission_with_workbook(created_by=self.user, price_batch=self.batch)
+        self.submission = create_submission_with_workbook(
+            created_by=self.user,
+            price_batch=self.batch,
+            exhibition_center_id=EXHIBITION_CENTER_NEC,
+            project_nature=PROJECT_NATURE_PERMANENT,
+        )
         self.parent_row = create_submission_row(
             self.submission,
             excel_row_no=4,
@@ -99,6 +105,10 @@ class PriceAuditToolTests(TempMediaRootMixin, TestCase):
         context = toolset.get_submission_row_context()
 
         self.assertEqual(context["submission_id"], self.submission.id)
+        self.assertEqual(context["exhibition_center"]["id"], EXHIBITION_CENTER_NEC)
+        self.assertEqual(context["exhibition_center"]["name"], "天津国家会展中心")
+        self.assertEqual(context["project_nature"]["id"], PROJECT_NATURE_PERMANENT)
+        self.assertEqual(context["project_nature"]["name"], "常设陈列")
         self.assertEqual(context["row"]["row_id"], self.row.id)
         self.assertEqual(context["parent_row"]["sequence_no"], self.parent_row.sequence_no)
         self.assertEqual(context["parent_row"]["fee_type"], self.parent_row.fee_type)

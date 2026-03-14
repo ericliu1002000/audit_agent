@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.conf import settings
 from django.db import models
 
+from price_audit.constants import EXHIBITION_CENTER_CHOICES, PROJECT_NATURE_CHOICES
 from price_audit.models.common import (
     price_audit_submission_audited_excel_upload_to,
     price_audit_submission_source_upload_to,
@@ -45,6 +46,14 @@ class PriceAuditSubmission(models.Model):
     )
     original_filename = models.CharField("原始文件名", max_length=255)
     project_name = models.CharField("项目名称", max_length=255, blank=True)
+    exhibition_center_id = models.PositiveSmallIntegerField(
+        "会展中心",
+        choices=EXHIBITION_CENTER_CHOICES,
+    )
+    project_nature = models.PositiveSmallIntegerField(
+        "项目性质",
+        choices=PROJECT_NATURE_CHOICES,
+    )
     source_file = models.FileField(
         "送审文件",
         upload_to=price_audit_submission_source_upload_to,

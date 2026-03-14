@@ -47,6 +47,14 @@ class PriceAuditToolset:
             "submission_id": self.submission.id,
             "price_batch_id": self.submission.price_batch_id,
             "project_name": self.submission.project_name,
+            "exhibition_center": {
+                "id": self.submission.exhibition_center_id,
+                "name": self.submission.get_exhibition_center_id_display(),
+            },
+            "project_nature": {
+                "id": self.submission.project_nature,
+                "name": self.submission.get_project_nature_display(),
+            },
             "row": {
                 "row_id": self.submission_row.id,
                 "sequence_no": self.submission_row.sequence_no,

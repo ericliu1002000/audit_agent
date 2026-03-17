@@ -25,6 +25,27 @@ def _run_async(coro):
         loop.close()
 
 
+async def _run_agent_workflow(agent, *, user_prompt: str):
+    """在事件循环内启动 workflow，并等待最终结构化结果。"""
+
+    handler = agent.run(user_msg=user_prompt)
+    return await handler
+
+
+def _coerce_output(result, output_cls: Type[BaseModel]):
+    """把 workflow 返回值统一收敛成目标 Pydantic 模型。"""
+
+    if hasattr(result, "structured_response") and result.structured_response is not None:
+        result = result.structured_response
+    if isinstance(result, output_cls):
+        return result
+    if isinstance(result, dict):
+        return output_cls.model_validate(result)
+    if hasattr(result, "model_dump"):
+        return output_cls.model_validate(result.model_dump())
+    return output_cls.model_validate_json(str(result))
+
+
 def run_function_agent(
     *,
     system_prompt: str,
@@ -49,9 +70,5 @@ def run_function_agent(
         system_prompt=system_prompt,
         output_cls=output_cls,
     )
-    result = _run_async(agent.run(user_msg=user_prompt))
-    if hasattr(result, "structured_response") and result.structured_response is not None:
-        return result.structured_response
-    if isinstance(result, output_cls):
-        return result
-    return output_cls.model_validate_json(str(result))
+    result = _run_async(_run_agent_workflow(agent, user_prompt=user_prompt))
+    return _coerce_output(result, output_cls)

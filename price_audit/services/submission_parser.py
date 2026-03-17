@@ -15,9 +15,7 @@ from price_audit.services.normalization import normalize_text, parse_decimal
 
 
 SUMMARY_FEE_TYPES = {"小计", "税费", "合计"}
-SUBMISSION_HEADER_ROW = 2
-DATA_START_ROW = 3
-SUBMISSION_TEMPLATE_MARKERS = {
+REVIEW_TEMPLATE_MARKERS = {
     (1, 1): "序号",
     (1, 2): "费用类型",
     (1, 3): "送审",
@@ -30,6 +28,26 @@ SUBMISSION_TEMPLATE_MARKERS = {
     (2, 7): "预算金额（元）",
     (2, 8): "预算编制说明",
 }
+STANDARD_TEMPLATE_MARKERS = {
+    (1, 1): "序号",
+    (1, 2): "费用类型",
+    (1, 3): "计量单位",
+    (1, 4): "单价（元）",
+    (1, 5): "数量",
+    (1, 6): "天数",
+    (1, 7): "预算金额（元）",
+    (1, 8): "预算编制说明",
+}
+TEMPLATE_SPECS = (
+    {
+        "markers": REVIEW_TEMPLATE_MARKERS,
+        "data_start_row": 3,
+    },
+    {
+        "markers": STANDARD_TEMPLATE_MARKERS,
+        "data_start_row": 2,
+    },
+)
 
 
 @dataclass(frozen=True)
@@ -78,13 +96,23 @@ def _infer_parent_sequence(sequence_no: str) -> str:
     return sequence_no.rsplit(".", 1)[0]
 
 
-def _validate_template(sheet) -> None:
-    """校验是否符合当前支持的送审表模板。"""
+def _matches_template(sheet, markers: dict[tuple[int, int], str]) -> bool:
+    """判断工作表是否匹配某一种受支持模板。"""
 
-    for (row_no, col_no), expected in SUBMISSION_TEMPLATE_MARKERS.items():
+    for (row_no, col_no), expected in markers.items():
         actual = _clean_header_text(sheet.cell(row=row_no, column=col_no).value)
         if actual != _clean_header_text(expected):
-            raise ValueError("价格审核模板格式错误，请上传当前支持的送审表模板。")
+            return False
+    return True
+
+
+def _detect_template(sheet) -> dict[str, Any]:
+    """识别当前上传文件所使用的模板规格。"""
+
+    for spec in TEMPLATE_SPECS:
+        if _matches_template(sheet, spec["markers"]):
+            return spec
+    raise ValueError("价格审核模板格式错误，请上传当前支持的送审表模板。")
 
 
 def parse_submission_excel(file_path: str) -> list[ParsedSubmissionRow]:
@@ -102,12 +130,13 @@ def parse_submission_excel(file_path: str) -> list[ParsedSubmissionRow]:
         raise ValueError("仅支持上传 .xlsx 格式文件。") from exc
 
     sheet = workbook.worksheets[0]
-    _validate_template(sheet)
+    template_spec = _detect_template(sheet)
+    data_start_row = int(template_spec["data_start_row"])
 
     preliminary_rows: list[dict[str, Any]] = []
     child_parent_map: dict[str, int] = {}
 
-    for row_no in range(DATA_START_ROW, sheet.max_row + 1):
+    for row_no in range(data_start_row, sheet.max_row + 1):
         sequence_no = _normalize_sequence(sheet.cell(row=row_no, column=1).value)
         fee_type = normalize_text(sheet.cell(row=row_no, column=2).value)
         submitted_unit = normalize_text(sheet.cell(row=row_no, column=3).value)

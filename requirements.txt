@@ -6,8 +6,8 @@ django-filter
 
 django-extensions
 ipython
-python-dotenv==1.1.1
-django-import-export==4.3.14
+python-dotenv
+django-import-export
 openpyxl==3.1.5
 celery==5.5.3
 redis==7.0.1
@@ -16,9 +16,11 @@ marshmallow==3.21.3
 requests==2.32.3
 cryptography
 pydantic
-openai==1.55.3
+openai
 httpx[socks]
 markdown==3.7
-xhtml2pdf==0.2.15
+xhtml2pdf
 llama-index
 llama-index-llms-deepseek
+# pymilvus 2.4.x still imports pkg_resources at runtime.
+setuptools<81

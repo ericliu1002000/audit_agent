@@ -24,4 +24,7 @@ def build_deepseek_llm():
         model=model,
         api_key=api_key,
         temperature=0.1,
+        # Celery worker 中每次审核都通过 asyncio.run() 驱动一个短生命周期事件循环。
+        # 关闭 async client 复用，避免 OpenAI/httpx 在 loop 结束后异步回收连接池。
+        reuse_client=False,
     )

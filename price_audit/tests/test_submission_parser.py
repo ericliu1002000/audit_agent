@@ -177,3 +177,12 @@ class SubmissionParserTests(TempMediaRootMixin, TestCase):
 
         self.assertGreater(len(rows), 0)
         self.assertTrue(any(item.fee_type == "税费" and item.row_type == "summary" for item in rows))
+
+    def test_parse_submission_excel_supports_standard_submission_sample_file(self):
+        """标准送审表示例也应能成功解析。"""
+
+        sample_path = Path(__file__).resolve().parents[2] / "docs" / "标准送审表样例.xlsx"
+        rows = parse_submission_excel(str(sample_path))
+
+        self.assertGreater(len(rows), 0)
+        self.assertTrue(any(item.sequence_no == "2.1" for item in rows))

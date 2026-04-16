@@ -96,15 +96,9 @@ def invoke_deepseek(
                 httpx_client = None
             client = OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
 
-        if hasattr(client, "responses"):
-            return client.responses.create(
-                model=DEEPSEEK_MODEL,
-                temperature=DEEPSEEK_TEMPERATURE,
-                response_format=response_format or {"type": "json_object"},
-                input=messages,
-                **extra_params,
-            )
-        # 兼容旧版 openai SDK，仅支持 chat.completions 接口。
+        # 对 DeepSeek 固定走 Chat Completions。
+        # openai 2.x 虽然暴露了 responses API，但其方法签名与本项目当前
+        # 使用的 response_format/messages 组合不兼容，会导致运行时报错。
         return client.chat.completions.create(
             model=DEEPSEEK_MODEL,
             temperature=DEEPSEEK_TEMPERATURE,

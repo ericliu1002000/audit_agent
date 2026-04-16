@@ -125,25 +125,8 @@ PRICE_AUDIT_MILVUS_COLLECTION = os.getenv(
 )
 MILVUS_EMBED_DIM = int(os.getenv("MILVUS_EMBED_DIM", "1024"))
 
-# 旧本地 embedding 配置，当前已停用，仅为兼容历史环境变量而保留。
-# 项目现行统一使用硅基流动 embedding。
-EMBED_URL = os.getenv("EMBED_URL", "")
-EMBED_TOKEN = os.getenv("EMBED_TOKEN", "")
-SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY", "")
-SILICONFLOW_API_EMBEDDING_URL = os.getenv(
-    "SILICONFLOW_API_EMBEDDING_URL", "https://api.siliconflow.cn/v1/embeddings"
-)
-SILICONFLOW_EMBEDDING_MODEL = os.getenv(
-    "SILICONFLOW_EMBEDDING_MODEL", "Qwen/Qwen3-Embedding-0.6B"
-)
-SILICONFLOW_USE_ENV_PROXY = os.getenv("SILICONFLOW_USE_ENV_PROXY", "").lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
-SILICONFLOW_HTTP_PROXY = os.getenv("SILICONFLOW_HTTP_PROXY", "")
-SILICONFLOW_HTTPS_PROXY = os.getenv("SILICONFLOW_HTTPS_PROXY", "")
+VOLCENGINE_KEY = os.getenv("VOLCENGINE_KEY", "")
+VOLCENGINE_VISION_MODEL_ID = os.getenv("VOLCENGINE_VISION_MODEL_ID", "")
 
 CACHES = {
     "default": {

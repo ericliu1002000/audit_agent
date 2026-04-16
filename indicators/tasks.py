@@ -18,7 +18,7 @@ def _vectorize_indicator(indicator: Indicator, manager) -> None:
 
     步骤：
     1. 调用 Indicator.combo_text() 构建向量化文本。
-    2. 请求硅基流动嵌入服务，拿到 1024 维向量。
+    2. 请求豆包嵌入服务，拿到 1024 维向量。
     3. 调用 Milvus manager upsert，写入向量。
     4. DB 中将 is_vectorized 标记为 True。
     """

@@ -8,6 +8,7 @@ __pycache__/
 *.pyd
 *.pkl
 *.log
+static/tmp/*
 *.log.*git
 *.sqlite3
 .Python

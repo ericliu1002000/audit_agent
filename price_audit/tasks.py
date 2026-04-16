@@ -24,7 +24,7 @@ from price_audit.services.report_service import build_submission_report
 from price_audit.services.row_review_service import review_leaf_row
 from price_audit.services.submission_parser import SUMMARY_FEE_TYPES, populate_submission_rows
 from price_audit.vector_store import get_price_audit_milvus_manager
-from utils.vector_api import call_siliconflow_qwen3_embedding_api
+from utils.vector_api import call_embedding_api
 
 logger = logging.getLogger(__name__)
 ZERO = Decimal("0")
@@ -117,7 +117,7 @@ def vectorize_government_price_batch(
                     if reusable and reusable.get("embedding"):
                         vector = reusable.get("embedding")
                 if not vector:
-                    vector = call_siliconflow_qwen3_embedding_api(embedding_text)
+                    vector = call_embedding_api(embedding_text)
                 reusable_vectors[embedding_text] = list(vector)
             if len(vector) != expected_dim:
                 raise ValueError(

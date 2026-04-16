@@ -76,7 +76,7 @@ class DispatchVectorizationTaskTests(TestCase):
 class VectorizationReuseTests(TestCase):
     """验证标准价向量化会优先复用已存在向量。"""
 
-    @patch("price_audit.tasks.call_siliconflow_qwen3_embedding_api")
+    @patch("price_audit.tasks.call_embedding_api")
     @patch("price_audit.tasks.get_price_audit_milvus_manager")
     def test_vectorize_reuses_existing_vector_by_embedding_text(
         self,

@@ -65,14 +65,7 @@ def call_volcengine_embedding_api(text: str, timeout: float = 60.0) -> List[floa
     except ValueError as exc:
         raise RuntimeError(f"豆包嵌入服务返回非 JSON 响应: {response.text[:200]}") from exc
 
-    embedding = None
-    records = data.get("data") if isinstance(data, dict) else None
-    if isinstance(records, list) and records:
-        first = records[0]
-        if isinstance(first, dict):
-            embedding = first.get("embedding")
-    if embedding is None and isinstance(data, dict):
-        embedding = data.get("embedding")
+    embedding = _extract_embedding(data)
 
     if not isinstance(embedding, list) or not embedding:
         raise RuntimeError(f"豆包嵌入结果格式异常: {data}")
@@ -83,3 +76,18 @@ def call_volcengine_embedding_api(text: str, timeout: float = 60.0) -> List[floa
         )
 
     return [float(value) for value in embedding]
+
+
+def _extract_embedding(data):
+    if not isinstance(data, dict):
+        return None
+
+    records = data.get("data")
+    if isinstance(records, list) and records:
+        first = records[0]
+        if isinstance(first, dict):
+            return first.get("embedding")
+    if isinstance(records, dict):
+        return records.get("embedding")
+
+    return data.get("embedding")

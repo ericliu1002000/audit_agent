@@ -43,6 +43,23 @@ class VolcengineEmbeddingApiTests(unittest.TestCase):
         )
 
     @patch("utils.vector_api.requests.post")
+    def test_call_volcengine_embedding_api_accepts_data_object(self, mock_post):
+        response = Mock(status_code=200)
+        response.json.return_value = {
+            "data": {
+                "embedding": [0.1, 0.2, 0.3, 0.4],
+                "object": "embedding",
+            },
+            "object": "list",
+        }
+        mock_post.return_value = response
+
+        with self._mock_settings():
+            vector = vector_api.call_volcengine_embedding_api("hello world")
+
+        self.assertEqual(vector, [0.1, 0.2, 0.3, 0.4])
+
+    @patch("utils.vector_api.requests.post")
     def test_call_volcengine_embedding_api_http_error(self, mock_post):
         response = Mock(status_code=401)
         response.text = "invalid token"

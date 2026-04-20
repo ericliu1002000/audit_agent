@@ -20,10 +20,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+
+def _env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _csv_env(name):
+    return [value.strip() for value in os.getenv(name, "").split(",") if value.strip()]
+
+
+def _csrf_origin_from_host(host, scheme="https"):
+    host = host.strip()
+    if not host or host == "*":
+        return ""
+    if host.startswith("."):
+        host = f"*.{host.lstrip('.')}"
+    return f"{scheme}://{host}"
+
+
+def _csrf_origin(value, scheme="https"):
+    value = value.strip().rstrip("/")
+    if "://" in value:
+        return value
+    return _csrf_origin_from_host(value, scheme)
+
+
 DJANGO_ENV = os.getenv("DJANGO_ENV", "development").lower()
 LOG_LEVEL = os.getenv("DJANGO_LOG_LEVEL", "INFO").upper()
-ALLOWED_HOSTS_RAW = os.getenv("ALLOWED_HOSTS", "")
-ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_RAW.split(",") if host.strip()]
+ALLOWED_HOSTS = _csv_env("ALLOWED_HOSTS")
 if DJANGO_ENV != "production" and not ALLOWED_HOSTS:
     ALLOWED_HOSTS = []
 
@@ -187,16 +214,31 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'user:login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'user:login'
-SESSION_COOKIE_SECURE = DJANGO_ENV == "production"
-CSRF_COOKIE_SECURE = DJANGO_ENV == "production"
+COOKIE_SECURE = _env_bool("COOKIE_SECURE", False)
+SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", COOKIE_SECURE)
+CSRF_COOKIE_SECURE = _env_bool("CSRF_COOKIE_SECURE", COOKIE_SECURE)
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
-CSRF_TRUSTED_ORIGINS_RAW = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+USE_X_FORWARDED_HOST = _env_bool("USE_X_FORWARDED_HOST", False)
+if _env_bool("TRUST_X_FORWARDED_PROTO", False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGIN_SCHEME = os.getenv(
+    "CSRF_TRUSTED_ORIGIN_SCHEME",
+    "https" if CSRF_COOKIE_SECURE else "http",
+).strip().lower()
+if CSRF_TRUSTED_ORIGIN_SCHEME not in {"http", "https"}:
+    CSRF_TRUSTED_ORIGIN_SCHEME = "https" if CSRF_COOKIE_SECURE else "http"
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in CSRF_TRUSTED_ORIGINS_RAW.split(",")
-    if origin.strip()
+    origin
+    for value in _csv_env("CSRF_TRUSTED_ORIGINS")
+    if (origin := _csrf_origin(value, CSRF_TRUSTED_ORIGIN_SCHEME))
 ]
+if DJANGO_ENV == "production" and not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = [
+        origin
+        for host in ALLOWED_HOSTS
+        if (origin := _csrf_origin_from_host(host, CSRF_TRUSTED_ORIGIN_SCHEME))
+    ]
 CSRF_FAILURE_VIEW = "api.csrf.csrf_failure"
 
 REST_FRAMEWORK = {
